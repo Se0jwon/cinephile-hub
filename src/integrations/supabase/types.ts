@@ -14,7 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      movies: {
+        Row: {
+          backdrop_path: string | null
+          created_at: string
+          director: string | null
+          genres: string[] | null
+          id: string
+          overview: string | null
+          poster_path: string | null
+          release_date: string | null
+          runtime: number | null
+          title: string
+          tmdb_id: number
+          user_id: string
+          vote_average: number | null
+        }
+        Insert: {
+          backdrop_path?: string | null
+          created_at?: string
+          director?: string | null
+          genres?: string[] | null
+          id?: string
+          overview?: string | null
+          poster_path?: string | null
+          release_date?: string | null
+          runtime?: number | null
+          title: string
+          tmdb_id: number
+          user_id: string
+          vote_average?: number | null
+        }
+        Update: {
+          backdrop_path?: string | null
+          created_at?: string
+          director?: string | null
+          genres?: string[] | null
+          id?: string
+          overview?: string | null
+          poster_path?: string | null
+          release_date?: string | null
+          runtime?: number | null
+          title?: string
+          tmdb_id?: number
+          user_id?: string
+          vote_average?: number | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          created_at: string
+          id: string
+          movie_id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+          user_id: string
+          watched_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movie_id: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+          watched_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movie_id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
+          watched_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_movie_id_fkey"
+            columns: ["movie_id"]
+            isOneToOne: false
+            referencedRelation: "movies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
