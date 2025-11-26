@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import MovieDetail from "./pages/MovieDetail";
 import MyMovies from "./pages/MyMovies";
 import Theaters from "./pages/Theaters";
+import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/search" element={<Search />} />
           <Route path="/movie/:id" element={<MovieDetail />} />
           <Route path="/my-movies" element={<MyMovies />} />
           <Route path="/theaters" element={<Theaters />} />
