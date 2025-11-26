@@ -1,4 +1,5 @@
 import Navigation from "@/components/Navigation";
+import GoogleMap from "@/components/GoogleMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Clock } from "lucide-react";
 
@@ -75,18 +76,10 @@ const Theaters = () => {
           </div>
 
           <div className="lg:sticky lg:top-20 h-[600px] rounded-lg overflow-hidden border border-border">
-            <div className="w-full h-full bg-secondary flex items-center justify-center">
-              <div className="text-center space-y-4 p-8">
-                <MapPin className="h-16 w-16 text-primary mx-auto" />
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">지도 기능</h3>
-                  <p className="text-muted-foreground max-w-sm">
-                    Mapbox 연동으로 실제 지도에서 영화관 위치를 확인할 수 있습니다.
-                    Lovable Cloud 연동 후 Mapbox API 키를 추가하세요.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <GoogleMap 
+              theaters={theaters} 
+              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''} 
+            />
           </div>
         </div>
       </div>
