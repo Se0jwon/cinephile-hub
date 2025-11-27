@@ -62,10 +62,35 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           created_at: string
           id: string
+          is_public: boolean
           movie_id: string
           rating: number
           review_text: string | null
@@ -76,6 +101,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_public?: boolean
           movie_id: string
           rating: number
           review_text?: string | null
@@ -86,6 +112,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_public?: boolean
           movie_id?: string
           rating?: number
           review_text?: string | null

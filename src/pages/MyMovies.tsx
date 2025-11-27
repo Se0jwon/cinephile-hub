@@ -1,110 +1,149 @@
 import Navigation from "@/components/Navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Calendar } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Star, Calendar, Loader2 } from "lucide-react";
+import { useUserMovies } from "@/hooks/useMovies";
+import { getImageUrl } from "@/hooks/useTMDB";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const MyMovies = () => {
-  // Mock data - 나중에 Lovable Cloud로 실제 데이터 저장
-  const myReviews = [
-    {
-      id: 1,
-      movieTitle: "인셉션",
-      movieTitleEn: "Inception",
-      poster: "https://images.unsplash.com/photo-1616530940355-351fabd9524b?w=400&h=600&fit=crop",
-      rating: 5,
-      review: "현실과 꿈의 경계가 무너지는 놀라운 영화. 크리스토퍼 놀란의 최고작!",
-      watchedDate: "2024-01-15",
-    },
-    {
-      id: 2,
-      movieTitle: "다크 나이트",
-      movieTitleEn: "The Dark Knight",
-      poster: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop",
-      rating: 5,
-      review: "히스 레저의 조커 연기는 전설이다. 완벽한 슈퍼히어로 영화.",
-      watchedDate: "2024-01-10",
-    },
-    {
-      id: 3,
-      movieTitle: "쇼생크 탈출",
-      movieTitleEn: "The Shawshank Redemption",
-      poster: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop",
-      rating: 5,
-      review: "희망에 관한 가장 아름다운 이야기. 인생 영화.",
-      watchedDate: "2024-01-05",
-    },
-  ];
+  const { data: userMovies, isLoading } = useUserMovies();
+
+  const moviesWithReviews = userMovies?.filter(
+    (movie) => movie.reviews && movie.reviews.length > 0
+  );
+
+  const averageRating =
+    moviesWithReviews && moviesWithReviews.length > 0
+      ? (
+          moviesWithReviews.reduce((sum, movie) => {
+            const avgMovieRating =
+              movie.reviews.reduce((s: number, r: any) => s + r.rating, 0) /
+              movie.reviews.length;
+            return sum + avgMovieRating;
+          }, 0) / moviesWithReviews.length
+        ).toFixed(1)
+      : "0.0";
 
   return (
-    <div className="min-h-screen pt-16">
-      <Navigation />
-      
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">내가 본 영화</h1>
-          <p className="text-muted-foreground">
-            총 {myReviews.length}편의 영화를 감상했습니다
-          </p>
-        </div>
+    <ProtectedRoute>
+      <div className="min-h-screen pt-16">
+        <Navigation />
 
-        <div className="grid gap-6">
-          {myReviews.map((review) => (
-            <Card key={review.id} className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="grid md:grid-cols-[200px_1fr] gap-6 p-6">
-                  <div className="mx-auto md:mx-0">
-                    <img
-                      src={review.poster}
-                      alt={review.movieTitle}
-                      className="w-full max-w-[200px] rounded-lg shadow-lg"
-                    />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-2xl font-bold mb-1">
-                        {review.movieTitle}
-                      </h3>
-                      <p className="text-muted-foreground">
-                        {review.movieTitleEn}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center space-x-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-5 w-5 ${
-                              i < review.rating
-                                ? "fill-primary text-primary"
-                                : "text-muted"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{review.watchedDate}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-semibold text-muted-foreground mb-2">
-                        내 리뷰
-                      </h4>
-                      <p className="text-foreground/90 leading-relaxed">
-                        {review.review}
-                      </p>
-                    </div>
-                  </div>
+        <div className="container mx-auto px-4 py-12">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2">내가 본 영화</h1>
+            <div className="flex items-center gap-6 text-muted-foreground">
+              <p>총 {moviesWithReviews?.length || 0}편의 영화를 감상했습니다</p>
+              {moviesWithReviews && moviesWithReviews.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Star className="h-5 w-5 fill-primary text-primary" />
+                  <span className="font-semibold text-foreground">
+                    평균 평점: {averageRating}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              )}
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : moviesWithReviews && moviesWithReviews.length > 0 ? (
+            <div className="grid gap-6">
+              {moviesWithReviews.map((movie: any) => {
+                const review = movie.reviews[0];
+                const posterUrl = getImageUrl(movie.poster_path);
+
+                return (
+                  <Link key={movie.id} to={`/movie/${movie.tmdb_id}`}>
+                    <Card className="overflow-hidden hover:ring-2 hover:ring-primary transition-all">
+                      <CardContent className="p-0">
+                        <div className="grid md:grid-cols-[200px_1fr] gap-6 p-6">
+                          <div className="mx-auto md:mx-0">
+                            <img
+                              src={posterUrl}
+                              alt={movie.title}
+                              className="w-full max-w-[200px] rounded-lg shadow-lg"
+                            />
+                          </div>
+
+                          <div className="space-y-4">
+                            <div>
+                              <h3 className="text-2xl font-bold mb-1">
+                                {movie.title}
+                              </h3>
+                              {movie.release_date && (
+                                <p className="text-muted-foreground">
+                                  {movie.release_date.split("-")[0]}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center space-x-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-5 w-5 ${
+                                      i < review.rating
+                                        ? "fill-primary text-primary"
+                                        : "text-muted"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+
+                              {review.watched_date && (
+                                <div className="flex items-center space-x-2 text-muted-foreground">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>
+                                    {format(
+                                      new Date(review.watched_date),
+                                      "yyyy년 M월 d일",
+                                      { locale: ko }
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {review.review_text && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+                                  내 리뷰
+                                </h4>
+                                <p className="text-foreground/90 leading-relaxed line-clamp-3">
+                                  {review.review_text}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-24">
+              <p className="text-muted-foreground text-lg mb-6">
+                아직 감상한 영화가 없습니다.
+              </p>
+              <Link to="/">
+                <button className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                  영화 찾아보기
+                </button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 
