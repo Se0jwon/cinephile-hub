@@ -4,7 +4,7 @@ import GoogleMap, { Theater } from "@/components/GoogleMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Clock, Search } from "lucide-react";
+import { MapPin, Phone, Clock, Search, Loader2 } from "lucide-react";
 
 const Theaters = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,72 +15,92 @@ const Theaters = () => {
     lng: 126.978,
   });
   const [selectedTheater, setSelectedTheater] = useState<Theater | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] =
+    useState<google.maps.LatLngLiteral | null>(null);
 
   const handleMapLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
   }, []);
-
-  const searchNearbyTheaters = useCallback(() => {
-    if (!map) return;
-    const service = new google.maps.places.PlacesService(map);
-    service.nearbySearch(
-      {
-        location: map.getCenter()!,
-        radius: 5000, // 5km
-        type: "movie_theater",
-      },
-      (results, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          const formattedResults: Theater[] = results.map((p) => ({
-            id: p.place_id!,
-            name: p.name!,
-            address: p.vicinity!,
-            lat: p.geometry!.location!.lat(),
-            lng: p.geometry!.location!.lng(),
-          }));
-          setTheaters(formattedResults);
-        }
-      }
-    );
-  }, [map]);
 
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setMapCenter({ lat: latitude, lng: longitude });
+          const location = { lat: latitude, lng: longitude };
+          setMapCenter(location);
+          setUserLocation(location);
         },
         () => {
-          // Handle location error or denial, use default
           console.log("Could not get user location, using default.");
+          setUserLocation(mapCenter); // Use default location
         }
       );
+    } else {
+      setUserLocation(mapCenter); // Geolocation not supported
     }
   }, []);
 
+  const searchNearbyTheaters = useCallback(
+    (location: google.maps.LatLngLiteral) => {
+      if (!map) return;
+      setLoading(true);
+      const service = new google.maps.places.PlacesService(map);
+      service.nearbySearch(
+        {
+          location: location,
+          radius: 5000, // 5km
+          type: "movie_theater",
+        },
+        (results, status) => {
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            results
+          ) {
+            const formattedResults: Theater[] = results.map((p) => ({
+              id: p.place_id!,
+              name: p.name!,
+              address: p.vicinity!,
+              lat: p.geometry!.location!.lat(),
+              lng: p.geometry!.location!.lng(),
+            }));
+            setTheaters(formattedResults);
+          }
+          setLoading(false);
+        }
+      );
+    },
+    [map]
+  );
+
   useEffect(() => {
-    if (map) {
-      searchNearbyTheaters();
+    if (map && userLocation) {
+      searchNearbyTheaters(userLocation);
     }
-  }, [map, searchNearbyTheaters]);
+  }, [map, userLocation, searchNearbyTheaters]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!map || !searchQuery) {
-      searchNearbyTheaters();
+    if (!map) return;
+    if (!searchQuery) {
+      if (userLocation) searchNearbyTheaters(userLocation);
       return;
     }
 
+    setLoading(true);
     const service = new google.maps.places.PlacesService(map);
     service.textSearch(
       {
-        query: searchQuery,
+        query: `영화관 ${searchQuery}`,
         location: map.getCenter()!,
         radius: 10000, // 10km
       },
       (results, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+        if (
+          status === google.maps.places.PlacesServiceStatus.OK &&
+          results
+        ) {
           const formattedResults: Theater[] = results.map((p) => ({
             id: p.place_id!,
             name: p.name!,
@@ -96,7 +116,10 @@ const Theaters = () => {
             });
             setSelectedTheater(formattedResults[0]);
           }
+        } else {
+          setTheaters([]);
         }
+        setLoading(false);
       }
     );
   };
@@ -128,7 +151,11 @@ const Theaters = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-24"
             />
-            <Button type="submit" className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8">
+            <Button
+              type="submit"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8"
+              disabled={loading}
+            >
               검색
             </Button>
           </div>
@@ -136,12 +163,16 @@ const Theaters = () => {
 
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-4 max-h-[600px] overflow-y-auto">
-            {theaters.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center items-center h-full py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : theaters.length > 0 ? (
               theaters.map((theater) => (
                 <Card
                   key={theater.id}
                   className={`hover:border-primary/50 transition-colors cursor-pointer ${
-                    selectedTheater?.id === theater.id ? 'border-primary' : ''
+                    selectedTheater?.id === theater.id ? "border-primary" : ""
                   }`}
                   onClick={() => handleTheaterClick(theater)}
                 >
@@ -158,29 +189,13 @@ const Theaters = () => {
                         {theater.address}
                       </span>
                     </div>
-                    {theater.phone && (
-                      <div className="flex items-center space-x-3 text-sm">
-                        <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">
-                          {theater.phone}
-                        </span>
-                      </div>
-                    )}
-                    {theater.hours && (
-                      <div className="flex items-center space-x-3 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">
-                          {theater.hours}
-                        </span>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ))
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
-                  주변 영화관을 찾고 있거나 검색 결과가 없습니다.
+                  검색 결과가 없습니다.
                 </p>
               </div>
             )}
@@ -188,7 +203,7 @@ const Theaters = () => {
 
           <div className="lg:sticky lg:top-20 h-[600px] rounded-lg overflow-hidden border border-border">
             <GoogleMap
-              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyAO_D4vdug1B9a8VDqIx6do5E8ZagsjNbo"}
+              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}
               center={mapCenter}
               theaters={theaters}
               selectedTheater={selectedTheater}
