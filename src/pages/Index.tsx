@@ -1,7 +1,9 @@
 import Navigation from "@/components/Navigation";
 import MovieCard from "@/components/MovieCard";
 import { useTMDBPopular, useTMDBNowPlaying } from "@/hooks/useTMDB";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { data: popularData, isLoading: popularLoading } = useTMDBPopular();
@@ -38,7 +40,15 @@ const Index = () => {
 
       {/* Popular Movies */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold mb-8">인기 영화</h2>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold">인기 영화</h2>
+          <Link to="/category/popular">
+            <Button variant="secondary" size="sm">
+              더보기
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
+        </div>
         {popularLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -60,7 +70,15 @@ const Index = () => {
 
       {/* Now Playing Movies */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold mb-8">현재 상영중</h2>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold">현재 상영중</h2>
+          <Link to="/category/now-playing">
+            <Button variant="secondary" size="sm">
+              더보기
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
+        </div>
         {nowPlayingLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

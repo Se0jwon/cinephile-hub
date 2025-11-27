@@ -1,12 +1,88 @@
 import { useParams, Link } from "react-router-dom";
-import { mockMovies } from "@/data/mockMovies";
-import { ArrowLeft, Star, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, Star, Clock, Calendar, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navigation from "@/components/Navigation";
+import ReviewForm from "@/components/ReviewForm";
+import ReviewList from "@/components/ReviewList";
+import { useTMDBMovieDetails, getImageUrl } from "@/hooks/useTMDB";
+import { useMovieReviews, useAddReview } from "@/hooks/useReviews";
+import { useAddMovie, useCheckMovieAdded } from "@/hooks/useMovies";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const MovieDetail = () => {
   const { id } = useParams();
-  const movie = mockMovies.find((m) => m.id === Number(id));
+  const movieId = Number(id);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+
+  const { data: movie, isLoading } = useTMDBMovieDetails(movieId);
+  const { data: reviews, isLoading: reviewsLoading } = useMovieReviews(movieId);
+  const { data: movieAdded } = useCheckMovieAdded(movieId);
+  const addMovieMutation = useAddMovie();
+  const addReviewMutation = useAddReview();
+
+  const handleAddMovie = async () => {
+    if (!user) {
+      toast({
+        title: "로그인이 필요합니다",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!movie) return;
+
+    try {
+      const addedMovie = await addMovieMutation.mutateAsync(movie);
+      setReviewDialogOpen(true);
+    } catch (error: any) {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReviewSubmit = async (data: {
+    rating: number;
+    reviewText?: string;
+    watchedDate?: string;
+    isPublic: boolean;
+  }) => {
+    if (!movieAdded?.id) {
+      toast({
+        title: "영화를 먼저 추가해주세요",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await addReviewMutation.mutateAsync({
+      movieId: movieAdded.id,
+      ...data,
+    });
+
+    setReviewDialogOpen(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16">
+        <Navigation />
+        <div className="flex justify-center items-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   if (!movie) {
     return (
@@ -22,18 +98,26 @@ const MovieDetail = () => {
     );
   }
 
+  const director = movie.credits?.crew.find((c) => c.job === "Director");
+  const backdropUrl = getImageUrl(movie.backdrop_path, "original");
+  const posterUrl = getImageUrl(movie.poster_path, "w500");
+  const averageRating =
+    reviews && reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : null;
+
   return (
     <div className="min-h-screen">
       <Navigation />
-      
+
       <div className="relative h-[60vh] overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${movie.backdrop})` }}
+          style={{ backgroundImage: `url(${backdropUrl})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
         </div>
-        
+
         <div className="relative container mx-auto px-4 h-full flex items-end pb-8">
           <Link to="/">
             <Button variant="secondary" size="sm" className="mb-4">
@@ -48,8 +132,8 @@ const MovieDetail = () => {
         <div className="grid md:grid-cols-[300px_1fr] gap-8 mb-12">
           <div className="mx-auto md:mx-0">
             <img
-              src={movie.poster}
-              alt={movie.titleKo}
+              src={posterUrl}
+              alt={movie.title}
               className="w-full max-w-[300px] rounded-lg shadow-2xl"
             />
           </div>
@@ -57,75 +141,127 @@ const MovieDetail = () => {
           <div className="space-y-6">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold mb-2">
-                {movie.titleKo}
-              </h1>
-              <p className="text-xl text-muted-foreground mb-4">
                 {movie.title}
-              </p>
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm">
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-4 text-sm mt-4">
                 <div className="flex items-center space-x-2 bg-primary/20 px-3 py-1.5 rounded-full">
                   <Star className="h-5 w-5 fill-primary text-primary" />
-                  <span className="font-bold text-lg">{movie.rating.toFixed(1)}</span>
+                  <span className="font-bold text-lg">
+                    {movie.vote_average.toFixed(1)}
+                  </span>
                 </div>
-                
+
+                {averageRating && (
+                  <div className="flex items-center space-x-2 bg-accent/20 px-3 py-1.5 rounded-full">
+                    <span className="text-sm text-muted-foreground">사용자 평균</span>
+                    <Star className="h-4 w-4 fill-accent text-accent" />
+                    <span className="font-bold">{averageRating}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center space-x-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>{movie.year}</span>
+                  <span>{movie.release_date?.split("-")[0]}</span>
                 </div>
-                
-                <div className="flex items-center space-x-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>{movie.runtime}분</span>
-                </div>
+
+                {movie.runtime && (
+                  <div className="flex items-center space-x-2 text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{movie.runtime}분</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {movie.genre.map((genre) => (
-                <span
-                  key={genre}
-                  className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
-                >
-                  {genre}
-                </span>
-              ))}
-            </div>
+            {movie.genres && movie.genres.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {movie.genres.map((genre) => (
+                  <span
+                    key={genre.id}
+                    className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
+                  >
+                    {genre.name}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                  감독
-                </h3>
-                <p className="text-lg">{movie.director}</p>
-              </div>
+              {director && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                    감독
+                  </h3>
+                  <p className="text-lg">{director.name}</p>
+                </div>
+              )}
 
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                  출연
-                </h3>
-                <p className="text-lg">{movie.cast.join(", ")}</p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                  줄거리
-                </h3>
-                <p className="text-base leading-relaxed text-foreground/90">
-                  {movie.plot}
-                </p>
-              </div>
+              {movie.overview && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                    줄거리
+                  </h3>
+                  <p className="text-base leading-relaxed text-foreground/90">
+                    {movie.overview}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button size="lg" className="flex-1">
-                내 영화에 추가
-              </Button>
-              <Button size="lg" variant="secondary" className="flex-1">
-                리뷰 작성
-              </Button>
+              {!movieAdded ? (
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={handleAddMovie}
+                  disabled={addMovieMutation.isPending || !user}
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  내 영화에 추가
+                </Button>
+              ) : (
+                <Button size="lg" variant="secondary" className="flex-1" disabled>
+                  <Check className="h-5 w-5 mr-2" />
+                  추가됨
+                </Button>
+              )}
+
+              <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    className="flex-1"
+                    disabled={!movieAdded || !user}
+                  >
+                    리뷰 작성
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>리뷰 작성</DialogTitle>
+                  </DialogHeader>
+                  <ReviewForm onSubmit={handleReviewSubmit} />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
+        </div>
+
+        <Separator className="my-12" />
+
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold mb-6">
+            리뷰 ({reviews?.length || 0})
+          </h2>
+          {reviewsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ReviewList reviews={reviews || []} currentUserId={user?.id} />
+          )}
         </div>
       </div>
     </div>
