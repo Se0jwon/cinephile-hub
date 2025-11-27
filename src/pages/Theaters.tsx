@@ -1,98 +1,115 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Navigation from "@/components/Navigation";
-import GoogleMap from "@/components/GoogleMap";
+import GoogleMap, { Theater } from "@/components/GoogleMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Clock, Search } from "lucide-react";
 
 const Theaters = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [theaters, setTheaters] = useState<Theater[]>([]);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>({
+    lat: 37.5665,
+    lng: 126.978,
+  });
+  const [selectedTheater, setSelectedTheater] = useState<Theater | null>(null);
 
-  const allTheaters = [
-    {
-      id: 1,
-      name: "CGV 강남",
-      address: "서울특별시 강남구 강남대로 438",
-      phone: "1544-1122",
-      hours: "09:00 - 24:00",
-      lat: 37.5012,
-      lng: 127.0261,
-    },
-    {
-      id: 2,
-      name: "메가박스 코엑스",
-      address: "서울특별시 강남구 영동대로 513",
-      phone: "1544-0070",
-      hours: "09:00 - 02:00",
-      lat: 37.5115,
-      lng: 127.0595,
-    },
-    {
-      id: 3,
-      name: "롯데시네마 월드타워",
-      address: "서울특별시 송파구 올림픽로 300",
-      phone: "1544-8855",
-      hours: "10:00 - 24:00",
-      lat: 37.5131,
-      lng: 127.1028,
-    },
-    {
-      id: 4,
-      name: "CGV 용산아이파크몰",
-      address: "서울특별시 용산구 한강대로23길 55",
-      phone: "1544-1122",
-      hours: "09:00 - 24:00",
-      lat: 37.5295,
-      lng: 126.9654,
-    },
-    {
-      id: 5,
-      name: "메가박스 홍대",
-      address: "서울특별시 마포구 양화로 153",
-      phone: "1544-0070",
-      hours: "09:00 - 02:00",
-      lat: 37.5563,
-      lng: 126.9222,
-    },
-    {
-      id: 6,
-      name: "롯데시네마 건대입구",
-      address: "서울특별시 광진구 능동로 92",
-      phone: "1544-8855",
-      hours: "10:00 - 24:00",
-      lat: 37.5404,
-      lng: 127.0698,
-    },
-    {
-      id: 7,
-      name: "CGV 명동역 씨네라이브러리",
-      address: "서울특별시 중구 명동8길 36",
-      phone: "1544-1122",
-      hours: "10:00 - 23:00",
-      lat: 37.5606,
-      lng: 126.9860,
-    },
-    {
-      id: 8,
-      name: "메가박스 동대문",
-      address: "서울특별시 성동구 왕십리로 50",
-      phone: "1544-0070",
-      hours: "09:00 - 02:00",
-      lat: 37.5659,
-      lng: 127.0093,
-    },
-  ];
+  const handleMapLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
 
-  const theaters = allTheaters.filter(
-    (theater) =>
-      theater.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      theater.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const searchNearbyTheaters = useCallback(() => {
+    if (!map) return;
+    const service = new google.maps.places.PlacesService(map);
+    service.nearbySearch(
+      {
+        location: map.getCenter()!,
+        radius: 5000, // 5km
+        type: "movie_theater",
+      },
+      (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          const formattedResults: Theater[] = results.map((p) => ({
+            id: p.place_id!,
+            name: p.name!,
+            address: p.vicinity!,
+            lat: p.geometry!.location!.lat(),
+            lng: p.geometry!.location!.lng(),
+          }));
+          setTheaters(formattedResults);
+        }
+      }
+    );
+  }, [map]);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setMapCenter({ lat: latitude, lng: longitude });
+        },
+        () => {
+          // Handle location error or denial, use default
+          console.log("Could not get user location, using default.");
+        }
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (map) {
+      searchNearbyTheaters();
+    }
+  }, [map, searchNearbyTheaters]);
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!map || !searchQuery) {
+      searchNearbyTheaters();
+      return;
+    }
+
+    const service = new google.maps.places.PlacesService(map);
+    service.textSearch(
+      {
+        query: searchQuery,
+        location: map.getCenter()!,
+        radius: 10000, // 10km
+      },
+      (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          const formattedResults: Theater[] = results.map((p) => ({
+            id: p.place_id!,
+            name: p.name!,
+            address: p.formatted_address!,
+            lat: p.geometry!.location!.lat(),
+            lng: p.geometry!.location!.lng(),
+          }));
+          setTheaters(formattedResults);
+          if (formattedResults.length > 0) {
+            setMapCenter({
+              lat: formattedResults[0].lat,
+              lng: formattedResults[0].lng,
+            });
+            setSelectedTheater(formattedResults[0]);
+          }
+        }
+      }
+    );
+  };
+
+  const handleTheaterClick = (theater: Theater) => {
+    setMapCenter({ lat: theater.lat, lng: theater.lng });
+    setSelectedTheater(theater);
+  };
 
   return (
     <div className="min-h-screen pt-16">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">영화관 찾기</h1>
@@ -101,7 +118,7 @@ const Theaters = () => {
           </p>
         </div>
 
-        <div className="mb-6">
+        <form onSubmit={handleSearch} className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -109,51 +126,73 @@ const Theaters = () => {
               placeholder="영화관 이름 또는 주소로 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 pr-24"
             />
+            <Button type="submit" className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8">
+              검색
+            </Button>
           </div>
-        </div>
+        </form>
 
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-4 max-h-[600px] overflow-y-auto">
             {theaters.length > 0 ? (
               theaters.map((theater) => (
-              <Card key={theater.id} className="hover:border-primary/50 transition-colors cursor-pointer">
-                <CardHeader>
-                  <CardTitle className="flex items-start justify-between">
-                    <span>{theater.name}</span>
-                    <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-start space-x-3 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">{theater.address}</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-muted-foreground">{theater.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-muted-foreground">{theater.hours}</span>
-                  </div>
-                </CardContent>
-              </Card>
+                <Card
+                  key={theater.id}
+                  className={`hover:border-primary/50 transition-colors cursor-pointer ${
+                    selectedTheater?.id === theater.id ? 'border-primary' : ''
+                  }`}
+                  onClick={() => handleTheaterClick(theater)}
+                >
+                  <CardHeader>
+                    <CardTitle className="flex items-start justify-between">
+                      <span>{theater.name}</span>
+                      <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-start space-x-3 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">
+                        {theater.address}
+                      </span>
+                    </div>
+                    {theater.phone && (
+                      <div className="flex items-center space-x-3 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-muted-foreground">
+                          {theater.phone}
+                        </span>
+                      </div>
+                    )}
+                    {theater.hours && (
+                      <div className="flex items-center space-x-3 text-sm">
+                        <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-muted-foreground">
+                          {theater.hours}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               ))
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
-                  검색 결과가 없습니다.
+                  주변 영화관을 찾고 있거나 검색 결과가 없습니다.
                 </p>
               </div>
             )}
           </div>
 
           <div className="lg:sticky lg:top-20 h-[600px] rounded-lg overflow-hidden border border-border">
-            <GoogleMap 
-              theaters={theaters} 
-              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''} 
+            <GoogleMap
+              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyAO_D4vdug1B9a8VDqIx6do5E8ZagsjNbo"}
+              center={mapCenter}
+              theaters={theaters}
+              selectedTheater={selectedTheater}
+              onMapLoad={handleMapLoad}
             />
           </div>
         </div>

@@ -1,42 +1,72 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Loader } from "@googlemaps/js-api-loader";
 
-interface Theater {
-  id: number;
+export interface Theater {
+  id: string;
   name: string;
   address: string;
-  phone: string;
-  hours: string;
   lat: number;
   lng: number;
+  phone?: string;
+  hours?: string;
 }
 
 interface GoogleMapProps {
-  theaters: Theater[];
   apiKey: string;
+  center: google.maps.LatLngLiteral;
+  theaters: Theater[];
+  selectedTheater: Theater | null;
+  onMapLoad: (map: google.maps.Map) => void;
 }
 
-const GoogleMap = ({ theaters, apiKey }: GoogleMapProps) => {
+const GoogleMap = ({
+  apiKey,
+  center,
+  theaters,
+  selectedTheater,
+  onMapLoad,
+}: GoogleMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [markers, setMarkers] = useState<{ [id: string]: google.maps.Marker }>(
+    {}
+  );
+  const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(
+    null
+  );
 
   useEffect(() => {
-    if (!mapRef.current || !apiKey) return;
+    const loader = new Loader({
+      apiKey,
+      version: "weekly",
+      libraries: ["places"],
+    });
 
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
-    script.async = true;
-    script.defer = true;
-    
-    script.onload = () => {
-      if (!mapRef.current) return;
+    loader.load().then(() => {
+      if (mapRef.current) {
+        const mapInstance = new google.maps.Map(mapRef.current, {
+          center,
+          zoom: 15,
+          mapId: "CINEPHILE_HUB_MAP",
+        });
+        setMap(mapInstance);
+        onMapLoad(mapInstance);
+        setInfoWindow(new google.maps.InfoWindow());
+      }
+    });
+  }, [apiKey, onMapLoad]);
 
-      const center = theaters.length > 0 
-        ? { lat: theaters[0].lat, lng: theaters[0].lng }
-        : { lat: 37.5665, lng: 126.9780 };
+  useEffect(() => {
+    if (map) {
+      map.setCenter(center);
+    }
+  }, [map, center]);
 
-      const map = new google.maps.Map(mapRef.current, {
-        center,
-        zoom: 12,
-      });
+  useEffect(() => {
+    if (map) {
+      // Clear old markers
+      Object.values(markers).forEach((marker) => marker.setMap(null));
+      const newMarkers: { [id: string]: google.maps.Marker } = {};
 
       theaters.forEach((theater) => {
         const marker = new google.maps.Marker({
@@ -44,30 +74,33 @@ const GoogleMap = ({ theaters, apiKey }: GoogleMapProps) => {
           map,
           title: theater.name,
         });
-
-        const infoWindow = new google.maps.InfoWindow({
-          content: `
-            <div style="padding: 8px; color: #000;">
-              <h3 style="font-weight: bold; margin-bottom: 8px;">${theater.name}</h3>
-              <p style="margin: 4px 0; font-size: 14px;">${theater.address}</p>
-              <p style="margin: 4px 0; font-size: 14px;">📞 ${theater.phone}</p>
-              <p style="margin: 4px 0; font-size: 14px;">🕐 ${theater.hours}</p>
-            </div>
-          `
-        });
-
-        marker.addListener("click", () => {
-          infoWindow.open(map, marker);
-        });
+        newMarkers[theater.id] = marker;
       });
-    };
 
-    document.head.appendChild(script);
+      setMarkers(newMarkers);
+    }
+  }, [map, theaters]);
 
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, [theaters, apiKey]);
+  useEffect(() => {
+    if (map && infoWindow && selectedTheater && markers[selectedTheater.id]) {
+      const marker = markers[selectedTheater.id];
+      infoWindow.setContent(`
+        <div style="padding: 8px; color: #000;">
+          <h3 style="font-weight: bold; margin-bottom: 8px;">${
+            selectedTheater.name
+          }</h3>
+          ${
+            selectedTheater.address
+              ? `<p style="margin: 4px 0; font-size: 14px;">${selectedTheater.address}</p>`
+              : ""
+          }
+        </div>
+      `);
+      infoWindow.open(map, marker);
+    } else if (infoWindow) {
+      infoWindow.close();
+    }
+  }, [map, infoWindow, selectedTheater, markers]);
 
   return <div ref={mapRef} className="w-full h-full rounded-lg" />;
 };
