@@ -61,3 +61,6 @@ DROP POLICY IF EXISTS "Users can view their own reviews" ON public.reviews;
 CREATE POLICY "Users can view public reviews or their own reviews"
   ON public.reviews FOR SELECT
                                         USING (is_public = true OR auth.uid() = user_id);
+CREATE POLICY "Profiles are viewable by authenticated users"
+  ON public.profiles FOR SELECT
+                                    USING (auth.uid() IS NOT NULL);
