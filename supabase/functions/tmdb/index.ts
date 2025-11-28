@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('TMDB_API_KEY is not configured');
     }
 
-    const { action, query, movieId, page = 1 } = await req.json();
+    const { action, query, movieId, page = 1, providerId } = await req.json();
     const baseUrl = 'https://api.themoviedb.org/3';
     
     let url = '';
@@ -33,6 +33,9 @@ serve(async (req) => {
         break;
       case 'details':
         url = `${baseUrl}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`;
+        break;
+      case 'provider':
+        url = `${baseUrl}/discover/movie?api_key=${TMDB_API_KEY}&with_watch_providers=${providerId}&watch_region=KR&page=${page}&language=ko-KR&sort_by=popularity.desc`;
         break;
       default:
         throw new Error('Invalid action');

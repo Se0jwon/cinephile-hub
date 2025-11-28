@@ -79,8 +79,8 @@ const GoogleMap = ({
           "marker"
         )) as google.maps.MarkerLibrary;
         const { InfoWindow } = (await google.maps.importLibrary(
-          "places"
-        )) as typeof google.maps.InfoWindow;
+          "maps"
+        )) as google.maps.MapsLibrary;
 
         const mapInstance = new Map(mapRef.current, {
           center,
