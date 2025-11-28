@@ -84,6 +84,20 @@ export const useTMDBMovieDetails = (movieId: number) => {
   });
 };
 
+// Hook for fetching movies by streaming provider
+export const useTMDBByProvider = (providerId: number, page: number = 1) => {
+  return useQuery({
+    queryKey: ['tmdb', 'provider', providerId, page],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('tmdb', {
+        body: { action: 'provider', providerId, page }
+      });
+      if (error) throw error;
+      return data as TMDBResponse;
+    },
+  });
+};
+
 export const getImageUrl = (path: string | null, size: 'w500' | 'w780' | 'original' = 'w500') => {
   if (!path) return '/placeholder.svg';
   return `https://image.tmdb.org/t/p/${size}${path}`;
