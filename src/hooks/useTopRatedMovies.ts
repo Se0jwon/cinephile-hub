@@ -9,9 +9,9 @@ interface TopRatedMovie {
   review_count: number;
 }
 
-export const useTopRatedMovies = (limit: number = 10) => {
+export const useTopRatedMovies = (limit: number = 10, minReviews: number = 3) => {
   return useQuery({
-    queryKey: ['topRatedMovies', limit],
+    queryKey: ['topRatedMovies', limit, minReviews],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
@@ -43,7 +43,7 @@ export const useTopRatedMovies = (limit: number = 10) => {
         return acc;
       }, {});
 
-      // Calculate averages and sort
+      // Calculate averages, filter by minimum reviews, and sort
       const topRated: TopRatedMovie[] = Object.values(movieRatings)
         .map((movie: any) => ({
           tmdb_id: movie.tmdb_id,
@@ -52,6 +52,7 @@ export const useTopRatedMovies = (limit: number = 10) => {
           average_rating: movie.ratings.reduce((sum: number, r: number) => sum + r, 0) / movie.ratings.length,
           review_count: movie.ratings.length,
         }))
+        .filter((movie: TopRatedMovie) => movie.review_count >= minReviews)
         .sort((a: TopRatedMovie, b: TopRatedMovie) => b.average_rating - a.average_rating)
         .slice(0, limit);
 

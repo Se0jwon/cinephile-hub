@@ -1,6 +1,6 @@
 import Navigation from "@/components/Navigation";
 import MovieCard from "@/components/MovieCard";
-import { useTMDBPopular, useTMDBNowPlaying, useTMDBByProvider } from "@/hooks/useTMDB";
+import { useTMDBPopular, useTMDBNowPlaying, useTMDBByProvider, useTMDBGenres } from "@/hooks/useTMDB";
 import { useTopRatedMovies } from "@/hooks/useTopRatedMovies";
 import { Loader2, ChevronRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -16,8 +16,11 @@ const Index = () => {
   const { data: disneyData, isLoading: disneyLoading } = useTMDBByProvider(337);
   const { data: watchaData, isLoading: watchaLoading } = useTMDBByProvider(97);
   
-  // Top rated movies from user reviews
-  const { data: topRatedData, isLoading: topRatedLoading } = useTopRatedMovies(10);
+  // Top rated movies from user reviews (minimum 3 reviews)
+  const { data: topRatedData, isLoading: topRatedLoading } = useTopRatedMovies(10, 3);
+  
+  // Genre list
+  const { data: genresData } = useTMDBGenres();
 
   return (
     <div className="min-h-screen">
@@ -184,6 +187,7 @@ const Index = () => {
                 title={movie.title}
                 posterPath={movie.poster_path}
                 voteAverage={movie.vote_average}
+                platform="netflix"
               />
             ))}
           </div>
@@ -214,6 +218,7 @@ const Index = () => {
                 title={movie.title}
                 posterPath={movie.poster_path}
                 voteAverage={movie.vote_average}
+                platform="disney"
               />
             ))}
           </div>
@@ -244,11 +249,33 @@ const Index = () => {
                 title={movie.title}
                 posterPath={movie.poster_path}
                 voteAverage={movie.vote_average}
+                platform="watcha"
               />
             ))}
           </div>
         )}
       </section>
+
+      {/* Genres */}
+      {genresData && (
+        <section className="container mx-auto px-4 py-16 bg-muted/30">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-4">장르별 탐색</h2>
+            <p className="text-muted-foreground">원하는 장르를 선택해서 더 많은 영화를 찾아보세요</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {genresData.genres.slice(0, 10).map((genre) => (
+              <Link key={genre.id} to={`/genre/${genre.id}`}>
+                <Card className="p-6 text-center hover:ring-2 hover:ring-primary transition-all cursor-pointer group">
+                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                    {genre.name}
+                  </h3>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };
