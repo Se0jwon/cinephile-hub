@@ -164,6 +164,12 @@ const Index = () => {
       <section className="container mx-auto px-4 py-16">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-3xl font-bold">🎬 Netflix</h2>
+          <Link to="/category/netflix">
+            <Button variant="secondary" size="sm">
+              더보기
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
         </div>
         {netflixLoading ? (
           <div className="flex justify-center py-12">
@@ -188,6 +194,12 @@ const Index = () => {
       <section className="container mx-auto px-4 py-16 bg-muted/30">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-3xl font-bold">✨ Disney+</h2>
+          <Link to="/category/disney">
+            <Button variant="secondary" size="sm">
+              더보기
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
         </div>
         {disneyLoading ? (
           <div className="flex justify-center py-12">
@@ -212,6 +224,12 @@ const Index = () => {
       <section className="container mx-auto px-4 py-16">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-3xl font-bold">🎯 Watcha</h2>
+          <Link to="/category/watcha">
+            <Button variant="secondary" size="sm">
+              더보기
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
         </div>
         {watchaLoading ? (
           <div className="flex justify-center py-12">

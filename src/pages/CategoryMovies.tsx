@@ -2,7 +2,7 @@ import { useParams, useSearchParams, Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import MovieCard from "@/components/MovieCard";
 import { Button } from "@/components/ui/button";
-import { useTMDBPopular, useTMDBNowPlaying } from "@/hooks/useTMDB";
+import { useTMDBPopular, useTMDBNowPlaying, useTMDBByProvider } from "@/hooks/useTMDB";
 import { Loader2, ArrowLeft } from "lucide-react";
 
 const CategoryMovies = () => {
@@ -10,12 +10,43 @@ const CategoryMovies = () => {
   const [searchParams] = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1");
 
-  const { data, isLoading } =
-    category === "popular"
-      ? useTMDBPopular(page)
-      : useTMDBNowPlaying(page);
+  // Platform provider IDs
+  const platformProviders: Record<string, number> = {
+    netflix: 8,
+    disney: 337,
+    watcha: 97,
+  };
 
-  const categoryTitle = category === "popular" ? "인기 영화" : "현재 상영중";
+  const providerId = category ? platformProviders[category] : undefined;
+
+  const { data: popularData, isLoading: popularLoading } = useTMDBPopular(page);
+  const { data: nowPlayingData, isLoading: nowPlayingLoading } = useTMDBNowPlaying(page);
+  const { data: providerData, isLoading: providerLoading } = useTMDBByProvider(
+    providerId || 0,
+    page
+  );
+
+  const data = providerId 
+    ? providerData 
+    : category === "popular" 
+    ? popularData 
+    : nowPlayingData;
+  
+  const isLoading = providerId 
+    ? providerLoading 
+    : category === "popular" 
+    ? popularLoading 
+    : nowPlayingLoading;
+
+  const categoryTitles: Record<string, string> = {
+    popular: "인기 영화",
+    "now-playing": "현재 상영중",
+    netflix: "🎬 Netflix",
+    disney: "✨ Disney+",
+    watcha: "🎯 Watcha",
+  };
+
+  const categoryTitle = category ? categoryTitles[category] || "영화" : "영화";
 
   return (
     <div className="min-h-screen pt-16">

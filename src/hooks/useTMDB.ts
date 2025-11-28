@@ -95,6 +95,7 @@ export const useTMDBByProvider = (providerId: number, page: number = 1) => {
       if (error) throw error;
       return data as TMDBResponse;
     },
+    enabled: !!providerId,
   });
 };
 
