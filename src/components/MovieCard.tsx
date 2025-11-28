@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getImageUrl } from "@/hooks/useTMDB";
@@ -8,9 +9,16 @@ interface MovieCardProps {
   title: string;
   posterPath: string | null;
   voteAverage: number;
+  platform?: 'netflix' | 'disney' | 'watcha';
 }
 
-const MovieCard = ({ id, title, posterPath, voteAverage }: MovieCardProps) => {
+const platformInfo = {
+  netflix: { label: 'Netflix', emoji: '🎬' },
+  disney: { label: 'Disney+', emoji: '✨' },
+  watcha: { label: 'Watcha', emoji: '🎯' },
+};
+
+const MovieCard = ({ id, title, posterPath, voteAverage, platform }: MovieCardProps) => {
   const imageUrl = getImageUrl(posterPath);
 
   return (
@@ -28,6 +36,13 @@ const MovieCard = ({ id, title, posterPath, voteAverage }: MovieCardProps) => {
               {voteAverage.toFixed(1)}
             </span>
           </div>
+          {platform && (
+            <div className="absolute top-2 left-2">
+              <Badge variant="secondary" className="bg-black/80 text-white backdrop-blur-sm">
+                {platformInfo[platform].emoji} {platformInfo[platform].label}
+              </Badge>
+            </div>
+          )}
         </div>
         <div className="p-4">
           <h3 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">

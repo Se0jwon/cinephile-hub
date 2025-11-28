@@ -99,6 +99,35 @@ export const useTMDBByProvider = (providerId: number, page: number = 1) => {
   });
 };
 
+// Hook for fetching movies by genre
+export const useTMDBByGenre = (genreId: number, page: number = 1) => {
+  return useQuery({
+    queryKey: ['tmdb', 'genre', genreId, page],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('tmdb', {
+        body: { action: 'genre', genreId, page }
+      });
+      if (error) throw error;
+      return data as TMDBResponse;
+    },
+    enabled: !!genreId,
+  });
+};
+
+// Hook for fetching genre list
+export const useTMDBGenres = () => {
+  return useQuery({
+    queryKey: ['tmdb', 'genres'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('tmdb', {
+        body: { action: 'genres' }
+      });
+      if (error) throw error;
+      return data as { genres: Array<{ id: number; name: string }> };
+    },
+  });
+};
+
 export const getImageUrl = (path: string | null, size: 'w500' | 'w780' | 'original' = 'w500') => {
   if (!path) return '/placeholder.svg';
   return `https://image.tmdb.org/t/p/${size}${path}`;

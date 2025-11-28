@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('TMDB_API_KEY is not configured');
     }
 
-    const { action, query, movieId, page = 1, providerId } = await req.json();
+    const { action, query, movieId, page = 1, providerId, genreId } = await req.json();
     const baseUrl = 'https://api.themoviedb.org/3';
     
     let url = '';
@@ -32,10 +32,16 @@ serve(async (req) => {
         url = `${baseUrl}/movie/now_playing?api_key=${TMDB_API_KEY}&page=${page}&language=ko-KR&region=KR`;
         break;
       case 'details':
-        url = `${baseUrl}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`;
+        url = `${baseUrl}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits,watch/providers`;
         break;
       case 'provider':
         url = `${baseUrl}/discover/movie?api_key=${TMDB_API_KEY}&with_watch_providers=${providerId}&watch_region=KR&page=${page}&language=ko-KR&sort_by=popularity.desc`;
+        break;
+      case 'genre':
+        url = `${baseUrl}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}&language=ko-KR&sort_by=popularity.desc`;
+        break;
+      case 'genres':
+        url = `${baseUrl}/genre/movie/list?api_key=${TMDB_API_KEY}&language=ko-KR`;
         break;
       default:
         throw new Error('Invalid action');
