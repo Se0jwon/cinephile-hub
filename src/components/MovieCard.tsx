@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, Play, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getImageUrl } from "@/hooks/useTMDB";
+import { getImageUrl, useTMDBMovieDetails } from "@/hooks/useTMDB";
 
 interface MovieCardProps {
   id: number;
@@ -19,17 +21,39 @@ const platformInfo = {
 };
 
 const MovieCard = ({ id, title, posterPath, voteAverage, platform }: MovieCardProps) => {
+  const [isHovered, setIsHovered] = useState(false);
   const imageUrl = getImageUrl(posterPath);
+  const { data: movie } = useTMDBMovieDetails(id);
 
   return (
     <Link to={`/movie/${id}`}>
-      <Card className="group cursor-pointer overflow-hidden hover:ring-2 hover:ring-primary transition-all duration-300">
+      <Card 
+        className="group cursor-pointer overflow-hidden hover:ring-2 hover:ring-primary transition-all duration-300"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div className="relative aspect-[2/3] overflow-hidden">
           <img
             src={imageUrl}
             alt={title}
             className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
           />
+          
+          {/* Hover Overlay */}
+          {isHovered && movie && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col justify-end p-4 animate-fade-in">
+              <p className="text-white text-sm line-clamp-3 mb-3">
+                {movie.overview || "줄거리 정보가 없습니다"}
+              </p>
+              <div className="flex gap-2">
+                <Button size="sm" className="flex-1" variant="secondary">
+                  <Play className="h-3 w-3 mr-1" />
+                  자세히
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm font-semibold text-white">

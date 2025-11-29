@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      list_movies: {
+        Row: {
+          added_at: string
+          id: string
+          list_id: string
+          poster_path: string | null
+          title: string
+          tmdb_id: number
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          list_id: string
+          poster_path?: string | null
+          title: string
+          tmdb_id: number
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          list_id?: string
+          poster_path?: string | null
+          title?: string
+          tmdb_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_movies_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "movie_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movie_lists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       movies: {
         Row: {
           backdrop_path: string | null
@@ -85,6 +150,35 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      review_likes: {
+        Row: {
+          created_at: string
+          id: string
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_likes_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {

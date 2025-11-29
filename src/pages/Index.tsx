@@ -29,26 +29,44 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center animate-zoom"
-          style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba')",
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/50 to-background" />
+        {/* Animated Background */}
+        <div className="absolute inset-0">
+          <div 
+            className="absolute inset-0 bg-cover bg-center animate-zoom"
+            style={{
+              backgroundImage: "url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba')",
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/60 to-background" />
+          
+          {/* Floating Elements */}
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0s', animationDuration: '4s' }} />
+          <div className="absolute top-1/3 right-1/4 w-40 h-40 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s', animationDuration: '5s' }} />
+          <div className="absolute bottom-1/4 left-1/3 w-36 h-36 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s', animationDuration: '6s' }} />
         </div>
         
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
-            영화의 모든 것,
-            <br />
-            <span className="bg-gradient-primary bg-clip-text text-transparent">
-              CineView
+          <h1 className="text-6xl md:text-8xl font-bold mb-6 animate-fade-in">
+            <span className="block mb-2 bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent animate-[fade-in_1s_ease-out]">
+              영화의 모든 것
+            </span>
+            <span className="block text-5xl md:text-7xl mt-4 animate-[fade-in_1.5s_ease-out]">
+              <span className="bg-gradient-primary bg-clip-text text-transparent">
+                CineView
+              </span>
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-fade-in">
+          <p className="text-xl md:text-3xl text-muted-foreground mb-8 animate-[fade-in_2s_ease-out] font-light">
             당신의 영화 취향을 발견하고 관리하세요
           </p>
+          <div className="flex gap-4 justify-center animate-[fade-in_2.5s_ease-out]">
+            <Button size="lg" className="text-lg px-8 shadow-glow-primary">
+              지금 시작하기
+            </Button>
+            <Button size="lg" variant="outline" className="text-lg px-8">
+              더 알아보기
+            </Button>
+          </div>
         </div>
       </section>
 

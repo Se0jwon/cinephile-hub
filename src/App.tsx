@@ -12,6 +12,8 @@ import Search from "./pages/Search";
 import Auth from "./pages/Auth";
 import CategoryMovies from "./pages/CategoryMovies";
 import GenreMovies from "./pages/GenreMovies";
+import Profile from "./pages/Profile";
+import MovieLists from "./pages/MovieLists";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/theaters" element={<Theaters />} />
             <Route path="/category/:category" element={<CategoryMovies />} />
             <Route path="/genre/:genreId" element={<GenreMovies />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/lists" element={<MovieLists />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
