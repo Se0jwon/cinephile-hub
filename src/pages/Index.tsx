@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import MovieCard from "@/components/MovieCard";
+import RecommendationsSection from "@/components/RecommendationsSection";
 import { useTMDBPopular, useTMDBNowPlaying, useTMDBByProvider, useTMDBGenres } from "@/hooks/useTMDB";
 import { useTopRatedMovies } from "@/hooks/useTopRatedMovies";
 import { Loader2, ChevronRight, Star } from "lucide-react";
@@ -29,7 +30,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <div 
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center animate-zoom"
           style={{
             backgroundImage: "url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba')",
           }}
@@ -256,9 +257,12 @@ const Index = () => {
         )}
       </section>
 
+      {/* Personalized Recommendations */}
+      <RecommendationsSection />
+
       {/* Genres */}
       {genresData && (
-        <section className="container mx-auto px-4 py-16 bg-muted/30">
+        <section className="container mx-auto px-4 py-16">
           <div className="mb-8">
             <h2 className="text-3xl font-bold mb-4">장르별 탐색</h2>
             <p className="text-muted-foreground">원하는 장르를 선택해서 더 많은 영화를 찾아보세요</p>
