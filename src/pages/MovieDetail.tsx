@@ -1,7 +1,8 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Star, Clock, Calendar, Plus, Check } from "lucide-react";
+import { ArrowLeft, Star, Clock, Calendar, Plus, Check, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navigation from "@/components/Navigation";
@@ -184,6 +185,22 @@ const MovieDetail = () => {
                     {genre.name}
                   </span>
                 ))}
+              </div>
+            )}
+
+            {movie['watch/providers']?.results?.KR?.flatrate && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Tv className="h-4 w-4" />
+                  시청 가능 플랫폼
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {movie['watch/providers'].results.KR.flatrate.map((provider: any) => (
+                    <Badge key={provider.provider_id} variant="secondary" className="px-3 py-1.5">
+                      {provider.provider_name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
 
