@@ -125,3 +125,26 @@ export const useUpdateReview = () => {
     },
   });
 };
+
+export const useDeleteReview = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (reviewId: string) => {
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
+        .from("reviews")
+        .delete()
+        .eq("id", reviewId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["movie-reviews"] });
+      queryClient.invalidateQueries({ queryKey: ["user-movies"] });
+    },
+  });
+};

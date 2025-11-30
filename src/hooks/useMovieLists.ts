@@ -183,3 +183,48 @@ export const useDeleteMovieList = () => {
     },
   });
 };
+
+export const useUserLists = () => {
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
+
+  return useQuery({
+    queryKey: ['user-lists', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('movie_lists')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+};
+
+export const useCheckMovieInList = (listId: string, tmdbId: number) => {
+  return useQuery({
+    queryKey: ['movie-in-list', listId, tmdbId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('list_movies')
+        .select('id')
+        .eq('list_id', listId)
+        .eq('tmdb_id', tmdbId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return !!data;
+    },
+    enabled: !!listId && !!tmdbId,
+  });
+};

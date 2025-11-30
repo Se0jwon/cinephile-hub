@@ -1,10 +1,12 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Star, Clock, Calendar, Plus, Check, Tv } from "lucide-react";
+import { ArrowLeft, Star, Clock, Calendar, Plus, Check, Tv, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import Navigation from "@/components/Navigation";
 import ReviewForm from "@/components/ReviewForm";
 import ReviewList from "@/components/ReviewList";
@@ -12,6 +14,7 @@ import { useTMDBMovieDetails, getImageUrl } from "@/hooks/useTMDB";
 import { useMovieReviews, useAddReview } from "@/hooks/useReviews";
 import { useAddMovie, useCheckMovieAdded } from "@/hooks/useMovies";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserLists, useAddMovieToList, useRemoveMovieFromList, useCheckMovieInList } from "@/hooks/useMovieLists";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -27,8 +30,11 @@ const MovieDetail = () => {
   const { data: movie, isLoading } = useTMDBMovieDetails(movieId);
   const { data: reviews, isLoading: reviewsLoading } = useMovieReviews(movieId);
   const { data: movieAdded } = useCheckMovieAdded(movieId);
+  const { data: userLists } = useUserLists();
   const addMovieMutation = useAddMovie();
   const addReviewMutation = useAddReview();
+  const addToListMutation = useAddMovieToList();
+  const removeFromListMutation = useRemoveMovieFromList();
 
   const handleAddMovie = async () => {
     if (!user) {
@@ -84,6 +90,38 @@ const MovieDetail = () => {
       });
 
       setReviewDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleList = async (listId: string, isInList: boolean) => {
+    if (!movie) return;
+
+    try {
+      if (isInList) {
+        await removeFromListMutation.mutateAsync({
+          listId,
+          tmdbId: movie.id,
+        });
+        toast({
+          title: "리스트에서 제거되었습니다",
+        });
+      } else {
+        await addToListMutation.mutateAsync({
+          list_id: listId,
+          tmdb_id: movie.id,
+          title: movie.title,
+          poster_path: movie.poster_path,
+        });
+        toast({
+          title: "리스트에 추가되었습니다",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "오류",
@@ -281,6 +319,43 @@ const MovieDetail = () => {
                   <ReviewForm onSubmit={handleReviewSubmit} />
                 </DialogContent>
               </Dialog>
+
+              {user && userLists && userLists.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button size="lg" variant="outline">
+                      <List className="h-5 w-5 mr-2" />
+                      리스트에 추가
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-sm">내 리스트</h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {userLists.map((list: any) => {
+                          const { data: isInList } = useCheckMovieInList(list.id, movieId);
+                          
+                          return (
+                            <div key={list.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={list.id}
+                                checked={isInList}
+                                onCheckedChange={() => handleToggleList(list.id, !!isInList)}
+                              />
+                              <label
+                                htmlFor={list.id}
+                                className="text-sm flex-1 cursor-pointer"
+                              >
+                                {list.name}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           </div>
         </div>

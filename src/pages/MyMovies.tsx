@@ -1,15 +1,39 @@
 import Navigation from "@/components/Navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Calendar, Loader2 } from "lucide-react";
-import { useUserMovies } from "@/hooks/useMovies";
+import { Button } from "@/components/ui/button";
+import { Star, Calendar, Loader2, Trash2, Edit } from "lucide-react";
+import { useUserMovies, useDeleteMovie } from "@/hooks/useMovies";
+import { useUpdateReview, useDeleteReview } from "@/hooks/useReviews";
 import { getImageUrl } from "@/hooks/useTMDB";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ReviewForm from "@/components/ReviewForm";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const MyMovies = () => {
   const { data: userMovies, isLoading } = useUserMovies();
+  const deleteMovieMutation = useDeleteMovie();
+  const deleteReviewMutation = useDeleteReview();
+  const updateReviewMutation = useUpdateReview();
+  const { toast } = useToast();
+  
+  const [editingReview, setEditingReview] = useState<any>(null);
+  const [deletingMovie, setDeletingMovie] = useState<string | null>(null);
+  const [deletingReview, setDeletingReview] = useState<string | null>(null);
 
   const moviesWithReviews = userMovies?.filter(
     (movie) => movie.reviews && movie.reviews.length > 0
@@ -26,6 +50,64 @@ const MyMovies = () => {
           }, 0) / moviesWithReviews.length
         ).toFixed(1)
       : "0.0";
+
+  const handleDeleteMovie = async (movieId: string) => {
+    try {
+      await deleteMovieMutation.mutateAsync(movieId);
+      toast({
+        title: "영화가 삭제되었습니다",
+      });
+      setDeletingMovie(null);
+    } catch (error: any) {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await deleteReviewMutation.mutateAsync(reviewId);
+      toast({
+        title: "리뷰가 삭제되었습니다",
+      });
+      setDeletingReview(null);
+    } catch (error: any) {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateReview = async (data: {
+    rating: number;
+    reviewText?: string;
+    watchedDate?: string;
+    isPublic: boolean;
+  }) => {
+    if (!editingReview) return;
+
+    try {
+      await updateReviewMutation.mutateAsync({
+        reviewId: editingReview.id,
+        ...data,
+      });
+      toast({
+        title: "리뷰가 수정되었습니다",
+      });
+      setEditingReview(null);
+    } catch (error: any) {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -59,73 +141,100 @@ const MyMovies = () => {
                 const posterUrl = getImageUrl(movie.poster_path);
 
                 return (
-                  <Link key={movie.id} to={`/movie/${movie.tmdb_id}`}>
-                    <Card className="overflow-hidden hover:ring-2 hover:ring-primary transition-all">
-                      <CardContent className="p-0">
-                        <div className="grid md:grid-cols-[200px_1fr] gap-6 p-6">
-                          <div className="mx-auto md:mx-0">
-                            <img
-                              src={posterUrl}
-                              alt={movie.title}
-                              className="w-full max-w-[200px] rounded-lg shadow-lg"
-                            />
-                          </div>
+                  <Card key={movie.id} className="overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all">
+                    <CardContent className="p-0">
+                      <div className="grid md:grid-cols-[200px_1fr] gap-6 p-6">
+                        <Link to={`/movie/${movie.tmdb_id}`} className="mx-auto md:mx-0">
+                          <img
+                            src={posterUrl}
+                            alt={movie.title}
+                            className="w-full max-w-[200px] rounded-lg shadow-lg hover:scale-105 transition-transform"
+                          />
+                        </Link>
 
-                          <div className="space-y-4">
-                            <div>
-                              <h3 className="text-2xl font-bold mb-1">
+                        <div className="space-y-4">
+                          <div>
+                            <Link to={`/movie/${movie.tmdb_id}`}>
+                              <h3 className="text-2xl font-bold mb-1 hover:text-primary transition-colors">
                                 {movie.title}
                               </h3>
-                              {movie.release_date && (
-                                <p className="text-muted-foreground">
-                                  {movie.release_date.split("-")[0]}
-                                </p>
-                              )}
+                            </Link>
+                            {movie.release_date && (
+                              <p className="text-muted-foreground">
+                                {movie.release_date.split("-")[0]}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center space-x-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-5 w-5 ${
+                                    i < review.rating
+                                      ? "fill-primary text-primary"
+                                      : "text-muted"
+                                  }`}
+                                />
+                              ))}
                             </div>
 
-                            <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center space-x-1">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`h-5 w-5 ${
-                                      i < review.rating
-                                        ? "fill-primary text-primary"
-                                        : "text-muted"
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-
-                              {review.watched_date && (
-                                <div className="flex items-center space-x-2 text-muted-foreground">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>
-                                    {format(
-                                      new Date(review.watched_date),
-                                      "yyyy년 M월 d일",
-                                      { locale: ko }
-                                    )}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {review.review_text && (
-                              <div>
-                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">
-                                  내 리뷰
-                                </h4>
-                                <p className="text-foreground/90 leading-relaxed line-clamp-3">
-                                  {review.review_text}
-                                </p>
+                            {review.watched_date && (
+                              <div className="flex items-center space-x-2 text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                <span>
+                                  {format(
+                                    new Date(review.watched_date),
+                                    "yyyy년 M월 d일",
+                                    { locale: ko }
+                                  )}
+                                </span>
                               </div>
                             )}
                           </div>
+
+                          {review.review_text && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+                                내 리뷰
+                              </h4>
+                              <p className="text-foreground/90 leading-relaxed line-clamp-3">
+                                {review.review_text}
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingReview(review)}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              리뷰 수정
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeletingReview(review.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              리뷰 삭제
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setDeletingMovie(movie.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              영화 삭제
+                            </Button>
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
@@ -142,6 +251,60 @@ const MyMovies = () => {
             </div>
           )}
         </div>
+
+        <Dialog open={!!editingReview} onOpenChange={() => setEditingReview(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>리뷰 수정</DialogTitle>
+            </DialogHeader>
+            {editingReview && (
+              <ReviewForm
+                onSubmit={handleUpdateReview}
+                initialData={{
+                  rating: editingReview.rating,
+                  reviewText: editingReview.review_text,
+                  watchedDate: editingReview.watched_date,
+                  isPublic: editingReview.is_public,
+                }}
+                submitLabel="수정하기"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={!!deletingMovie} onOpenChange={() => setDeletingMovie(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>영화를 삭제하시겠습니까?</AlertDialogTitle>
+              <AlertDialogDescription>
+                이 작업은 되돌릴 수 없습니다. 영화와 관련된 모든 리뷰가 함께 삭제됩니다.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deletingMovie && handleDeleteMovie(deletingMovie)}>
+                삭제
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!deletingReview} onOpenChange={() => setDeletingReview(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>리뷰를 삭제하시겠습니까?</AlertDialogTitle>
+              <AlertDialogDescription>
+                이 작업은 되돌릴 수 없습니다.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deletingReview && handleDeleteReview(deletingReview)}>
+                삭제
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ProtectedRoute>
   );
