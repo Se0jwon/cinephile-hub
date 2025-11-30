@@ -82,3 +82,25 @@ export const useCheckMovieAdded = (tmdbId: number) => {
     enabled: !!user,
   });
 };
+
+export const useDeleteMovie = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (movieId: string) => {
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
+        .from("movies")
+        .delete()
+        .eq("id", movieId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-movies"] });
+    },
+  });
+};

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Film, LogOut, User, Share2 } from "lucide-react";
+import { Film, LogOut, User, Share2, Users } from "lucide-react";
 import { NavLink } from "./NavLink";
 import { Button } from "./ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,6 +85,10 @@ const Navigation = () => {
                   <DropdownMenuItem onClick={() => navigate("/lists")}>
                     <Share2 className="h-4 w-4 mr-2" />
                     내 리스트
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/following")}>
+                    <Users className="h-4 w-4 mr-2" />
+                    팔로잉 피드
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
