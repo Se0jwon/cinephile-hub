@@ -22,6 +22,7 @@ const MovieDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [addedMovieId, setAddedMovieId] = useState<string | null>(null);
 
   const { data: movie, isLoading } = useTMDBMovieDetails(movieId);
   const { data: reviews, isLoading: reviewsLoading } = useMovieReviews(movieId);
@@ -42,7 +43,11 @@ const MovieDetail = () => {
 
     try {
       const addedMovie = await addMovieMutation.mutateAsync(movie);
-      setReviewDialogOpen(true);
+      setAddedMovieId(addedMovie.id);
+      toast({
+        title: "영화가 추가되었습니다",
+        description: "이제 리뷰를 작성할 수 있습니다.",
+      });
     } catch (error: any) {
       toast({
         title: "오류",
@@ -58,7 +63,9 @@ const MovieDetail = () => {
     watchedDate?: string;
     isPublic: boolean;
   }) => {
-    if (!movieAdded?.id) {
+    const movieDbId = addedMovieId || movieAdded?.id;
+    
+    if (!movieDbId) {
       toast({
         title: "영화를 먼저 추가해주세요",
         variant: "destructive",
@@ -66,12 +73,24 @@ const MovieDetail = () => {
       return;
     }
 
-    await addReviewMutation.mutateAsync({
-      movieId: movieAdded.id,
-      ...data,
-    });
+    try {
+      await addReviewMutation.mutateAsync({
+        movieId: movieDbId,
+        ...data,
+      });
 
-    setReviewDialogOpen(false);
+      toast({
+        title: "리뷰가 작성되었습니다",
+      });
+
+      setReviewDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -227,7 +246,7 @@ const MovieDetail = () => {
             </div>
 
             <div className="flex gap-3 pt-4">
-              {!movieAdded ? (
+              {!movieAdded && !addedMovieId ? (
                 <Button
                   size="lg"
                   className="flex-1"
@@ -250,7 +269,7 @@ const MovieDetail = () => {
                     size="lg"
                     variant="secondary"
                     className="flex-1"
-                    disabled={!movieAdded || !user}
+                    disabled={(!movieAdded && !addedMovieId) || !user}
                   >
                     리뷰 작성
                   </Button>
