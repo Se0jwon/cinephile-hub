@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus } from "lucide-react";
+import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useQuery } from "@tanstack/react-query";
@@ -57,6 +57,15 @@ const Profile = () => {
         },
       });
     }
+  };
+
+  const handleShareProfile = () => {
+    const url = `${window.location.origin}/profile?user=${viewUserId}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "링크가 복사되었습니다",
+      description: "클립보드에 프로필 링크가 복사되었습니다",
+    });
   };
 
   const { data: recentReviews, isLoading: reviewsLoading } = useQuery({
@@ -139,27 +148,32 @@ const Profile = () => {
                     </div>
                   </div>
                 </div>
-                {isOwnProfile ? (
-                  <Button variant="outline">프로필 편집</Button>
-                ) : (
-                  <Button
-                    onClick={handleFollowToggle}
-                    disabled={followUser.isPending || unfollowUser.isPending}
-                    variant={isFollowing ? "outline" : "default"}
-                  >
-                    {isFollowing ? (
-                      <>
-                        <UserMinus className="h-4 w-4 mr-2" />
-                        언팔로우
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        팔로우
-                      </>
-                    )}
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon" onClick={handleShareProfile}>
+                    <Share2 className="h-4 w-4" />
                   </Button>
-                )}
+                  {isOwnProfile ? (
+                    <Button variant="outline">프로필 편집</Button>
+                  ) : (
+                    <Button
+                      onClick={handleFollowToggle}
+                      disabled={followUser.isPending || unfollowUser.isPending}
+                      variant={isFollowing ? "outline" : "default"}
+                    >
+                      {isFollowing ? (
+                        <>
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          언팔로우
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          팔로우
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

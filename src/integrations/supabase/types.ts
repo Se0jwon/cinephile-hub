@@ -35,6 +35,38 @@ export type Database = {
         }
         Relationships: []
       }
+      list_collaborators: {
+        Row: {
+          can_edit: boolean
+          created_at: string
+          id: string
+          list_id: string
+          user_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          created_at?: string
+          id?: string
+          list_id: string
+          user_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          created_at?: string
+          id?: string
+          list_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_collaborators_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "movie_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       list_movies: {
         Row: {
           added_at: string
@@ -236,6 +268,38 @@ export type Database = {
           },
         ]
       }
+      review_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          reaction: Database["public"]["Enums"]["reaction_type"]
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reaction: Database["public"]["Enums"]["reaction_type"]
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reaction?: Database["public"]["Enums"]["reaction_type"]
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_reactions_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           created_at: string
@@ -288,7 +352,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      reaction_type: "like" | "love" | "laugh" | "surprised" | "sad" | "angry"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -415,6 +479,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      reaction_type: ["like", "love", "laugh", "surprised", "sad", "angry"],
+    },
   },
 } as const
