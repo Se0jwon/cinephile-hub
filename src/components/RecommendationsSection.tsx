@@ -6,21 +6,84 @@ import { Sparkles, X } from "lucide-react";
 import { useTMDBGenres, useTMDBByGenre } from "@/hooks/useTMDB";
 import MovieCard from "./MovieCard";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const RecommendationsSection = () => {
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [showPreferences, setShowPreferences] = useState(false);
   const { data: genresData } = useTMDBGenres();
+  const { user } = useAuth();
 
-  // Load saved preferences
+  // Get user's watch history and ratings
+  const { data: userMovies } = useQuery({
+    queryKey: ['user-movies-for-recommendations', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data: movies } = await supabase
+        .from('movies')
+        .select('genres')
+        .eq('user_id', user.id);
+
+      const { data: reviews } = await supabase
+        .from('reviews')
+        .select('rating, movies(genres)')
+        .eq('user_id', user.id)
+        .gte('rating', 4);
+
+      return { movies, reviews };
+    },
+    enabled: !!user,
+  });
+
+  // Calculate recommended genres based on user's watch history
   useEffect(() => {
+    if (userMovies && genresData) {
+      const genreScores: Record<string, number> = {};
+
+      // Count genres from watched movies
+      userMovies.movies?.forEach((movie: any) => {
+        movie.genres?.forEach((genre: string) => {
+          genreScores[genre] = (genreScores[genre] || 0) + 1;
+        });
+      });
+
+      // Weight genres from highly-rated movies more heavily
+      userMovies.reviews?.forEach((review: any) => {
+        review.movies?.genres?.forEach((genre: string) => {
+          genreScores[genre] = (genreScores[genre] || 0) + (review.rating / 2);
+        });
+      });
+
+      // Get top 3 genres
+      const topGenres = Object.entries(genreScores)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([genre]) => genre);
+
+      if (topGenres.length > 0) {
+        const genreIds = topGenres
+          .map(genreName => genresData.genres.find(g => g.name === genreName)?.id)
+          .filter(Boolean) as number[];
+        
+        if (genreIds.length > 0) {
+          setSelectedGenres(genreIds);
+          localStorage.setItem("favoriteGenres", JSON.stringify(genreIds));
+          return;
+        }
+      }
+    }
+
+    // Fallback to saved preferences
     const saved = localStorage.getItem("favoriteGenres");
     if (saved) {
       setSelectedGenres(JSON.parse(saved));
     } else {
       setShowPreferences(true);
     }
-  }, []);
+  }, [userMovies, genresData]);
 
   // Fetch movies for the first selected genre
   const { data: recommendedMovies, isLoading } = useTMDBByGenre(
