@@ -3,12 +3,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Star, Calendar, Lock, Heart, MessageCircle, Send, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Star, Calendar, Lock, Heart, MessageCircle, Send, Trash2, Smile } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useReviewLikes, useUserLikedReview, useToggleReviewLike } from "@/hooks/useReviewLikes";
 import { useReviewComments, useAddComment, useDeleteComment } from "@/hooks/useReviewComments";
+import { useReviewReactions, useUserReactions, useToggleReaction, ReactionType } from "@/hooks/useReviewReactions";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface Review {
   id: string;
@@ -46,15 +53,27 @@ const ReviewList = ({ reviews, currentUserId }: ReviewListProps) => {
   );
 };
 
+const REACTION_EMOJIS: Record<ReactionType, { emoji: string; label: string }> = {
+  like: { emoji: "👍", label: "좋아요" },
+  love: { emoji: "❤️", label: "사랑해요" },
+  laugh: { emoji: "😂", label: "웃겨요" },
+  surprised: { emoji: "😲", label: "놀라워요" },
+  sad: { emoji: "😢", label: "슬퍼요" },
+  angry: { emoji: "😠", label: "화나요" },
+};
+
 const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?: string }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const { data: likes = [] } = useReviewLikes(review.id);
   const { data: isLiked = false } = useUserLikedReview(review.id, currentUserId);
   const { data: comments = [] } = useReviewComments(review.id);
+  const { data: reactions = [] } = useReviewReactions(review.id);
+  const { data: userReactions = [] } = useUserReactions(review.id);
   const toggleLike = useToggleReviewLike();
   const addComment = useAddComment();
   const deleteComment = useDeleteComment();
+  const toggleReaction = useToggleReaction();
   const { toast } = useToast();
 
   const handleLikeClick = () => {
@@ -101,6 +120,24 @@ const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?:
       },
     });
   };
+
+  const handleReactionClick = (reaction: ReactionType) => {
+    if (!currentUserId) return;
+    
+    const isActive = userReactions.some((r: any) => r.reaction === reaction);
+    
+    toggleReaction.mutate({
+      reviewId: review.id,
+      reaction,
+      isActive,
+    });
+  };
+
+  // Group reactions by type and count
+  const reactionCounts = reactions.reduce((acc: Record<ReactionType, number>, r: any) => {
+    acc[r.reaction as ReactionType] = (acc[r.reaction as ReactionType] || 0) + 1;
+    return acc;
+  }, {} as Record<ReactionType, number>);
 
   return (
     <Card>
@@ -158,6 +195,22 @@ const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?:
               </p>
             )}
 
+            {/* Reaction badges */}
+            {Object.keys(reactionCounts).length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {(Object.entries(reactionCounts) as [ReactionType, number][]).map(([type, count]) => (
+                  <Badge
+                    key={type}
+                    variant="secondary"
+                    className="cursor-pointer text-xs"
+                    onClick={() => handleReactionClick(type)}
+                  >
+                    {REACTION_EMOJIS[type].emoji} {count}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 {format(new Date(review.created_at), "yyyy년 M월 d일 작성", {
@@ -174,6 +227,36 @@ const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?:
                   <MessageCircle className="h-4 w-4" />
                   <span className="text-sm">{comments.length}</span>
                 </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={!currentUserId}
+                      className="gap-2"
+                    >
+                      <Smile className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-2">
+                    <div className="flex gap-1">
+                      {(Object.keys(REACTION_EMOJIS) as ReactionType[]).map((type) => {
+                        const isActive = userReactions.some((r: any) => r.reaction === type);
+                        return (
+                          <Button
+                            key={type}
+                            variant={isActive ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => handleReactionClick(type)}
+                            className="text-lg p-2 h-auto"
+                          >
+                            {REACTION_EMOJIS[type].emoji}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <Button
                   variant="ghost"
                   size="sm"

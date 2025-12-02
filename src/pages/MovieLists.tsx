@@ -15,8 +15,18 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Loader2, Share2, Lock, Globe, Trash2 } from "lucide-react";
+import { Plus, Loader2, Share2, Lock, Globe, Trash2, UserPlus, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   useMovieLists, 
@@ -25,7 +35,9 @@ import {
   useListMovies,
   useDeleteMovieList
 } from "@/hooks/useMovieLists";
+import { useListCollaborators, useAddCollaborator, useRemoveCollaborator } from "@/hooks/useListCollaborators";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const MovieLists = () => {
   const { user, isAuthenticated } = useAuth();
@@ -225,7 +237,63 @@ const ListCard = ({
   onDelete?: () => void; 
   isOwner: boolean;
 }) => {
+  const [collaboratorDialogOpen, setCollaboratorDialogOpen] = useState(false);
+  const [collaboratorEmail, setCollaboratorEmail] = useState("");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { data: movies = [] } = useListMovies(list.id);
+  const { data: collaborators = [] } = useListCollaborators(list.id);
+  const addCollaborator = useAddCollaborator();
+  const removeCollaborator = useRemoveCollaborator();
+  const { toast } = useToast();
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/lists/${list.id}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "링크가 복사되었습니다",
+      description: "클립보드에 리스트 링크가 복사되었습니다",
+    });
+  };
+
+  const handleAddCollaborator = async () => {
+    if (!collaboratorEmail.trim()) return;
+
+    try {
+      await addCollaborator.mutateAsync({
+        listId: list.id,
+        userEmail: collaboratorEmail.trim(),
+      });
+      setCollaboratorEmail("");
+      setCollaboratorDialogOpen(false);
+      toast({
+        title: "협업자가 추가되었습니다",
+      });
+    } catch (error: any) {
+      toast({
+        title: "협업자 추가 실패",
+        description: error.message || "다시 시도해주세요",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveCollaborator = async (collaboratorId: string) => {
+    try {
+      await removeCollaborator.mutateAsync({
+        listId: list.id,
+        collaboratorId,
+      });
+      toast({
+        title: "협업자가 제거되었습니다",
+      });
+    } catch (error: any) {
+      toast({
+        title: "협업자 제거 실패",
+        description: error.message || "다시 시도해주세요",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Card className="hover:ring-2 hover:ring-primary transition-all">
@@ -283,18 +351,73 @@ const ListCard = ({
           </div>
         )}
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button variant="outline" size="sm" className="flex-1" onClick={handleShare}>
             <Share2 className="h-3 w-3 mr-1" />
             공유
           </Button>
-          {isOwner && onDelete && (
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={onDelete}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+          {isOwner && (
+            <>
+              <Dialog open={collaboratorDialogOpen} onOpenChange={setCollaboratorDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Users className="h-3 w-3" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>협업자 관리</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="collaborator-email">사용자 ID로 협업자 추가</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          id="collaborator-email"
+                          placeholder="사용자 ID 입력"
+                          value={collaboratorEmail}
+                          onChange={(e) => setCollaboratorEmail(e.target.value)}
+                        />
+                        <Button
+                          onClick={handleAddCollaborator}
+                          disabled={!collaboratorEmail.trim() || addCollaborator.isPending}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {collaborators.length > 0 && (
+                      <div>
+                        <Label>현재 협업자</Label>
+                        <div className="mt-2 space-y-2">
+                          {collaborators.map((collab: any) => (
+                            <div key={collab.id} className="flex items-center justify-between p-2 border rounded">
+                              <span>{collab.profiles?.username || "익명"}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveCollaborator(collab.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+              {onDelete && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </>
           )}
         </div>
       </CardContent>
