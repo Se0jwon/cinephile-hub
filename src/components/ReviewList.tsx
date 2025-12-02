@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Star, Calendar, Lock, Heart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Star, Calendar, Lock, Heart, MessageCircle, Send, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useReviewLikes, useUserLikedReview, useToggleReviewLike } from "@/hooks/useReviewLikes";
+import { useReviewComments, useAddComment, useDeleteComment } from "@/hooks/useReviewComments";
+import { useToast } from "@/hooks/use-toast";
 
 interface Review {
   id: string;
@@ -43,9 +47,15 @@ const ReviewList = ({ reviews, currentUserId }: ReviewListProps) => {
 };
 
 const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?: string }) => {
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
   const { data: likes = [] } = useReviewLikes(review.id);
   const { data: isLiked = false } = useUserLikedReview(review.id, currentUserId);
+  const { data: comments = [] } = useReviewComments(review.id);
   const toggleLike = useToggleReviewLike();
+  const addComment = useAddComment();
+  const deleteComment = useDeleteComment();
+  const { toast } = useToast();
 
   const handleLikeClick = () => {
     if (!currentUserId) return;
@@ -53,6 +63,42 @@ const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?:
       reviewId: review.id,
       userId: currentUserId,
       isLiked,
+    });
+  };
+
+  const handleAddComment = () => {
+    if (!currentUserId || !commentText.trim()) return;
+    
+    addComment.mutate(
+      {
+        reviewId: review.id,
+        commentText: commentText.trim(),
+      },
+      {
+        onSuccess: () => {
+          setCommentText("");
+          toast({
+            title: "댓글이 작성되었습니다",
+          });
+        },
+        onError: () => {
+          toast({
+            title: "댓글 작성 실패",
+            description: "다시 시도해주세요",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    deleteComment.mutate(commentId, {
+      onSuccess: () => {
+        toast({
+          title: "댓글이 삭제되었습니다",
+        });
+      },
     });
   };
 
@@ -118,19 +164,93 @@ const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?:
                   locale: ko,
                 })}
               </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLikeClick}
-                disabled={!currentUserId}
-                className="gap-2"
-              >
-                <Heart 
-                  className={`h-4 w-4 ${isLiked ? "fill-accent text-accent" : ""}`} 
-                />
-                <span className="text-sm">{likes.length}</span>
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowComments(!showComments)}
+                  className="gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="text-sm">{comments.length}</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLikeClick}
+                  disabled={!currentUserId}
+                  className="gap-2"
+                >
+                  <Heart 
+                    className={`h-4 w-4 ${isLiked ? "fill-accent text-accent" : ""}`} 
+                  />
+                  <span className="text-sm">{likes.length}</span>
+                </Button>
+              </div>
             </div>
+
+            {showComments && (
+              <div className="mt-4 space-y-3 border-t pt-4">
+                {comments.map((comment: any) => (
+                  <div key={comment.id} className="flex items-start gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-xs">
+                        {comment.profiles?.username?.[0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold">
+                          {comment.profiles?.username || "익명"}
+                        </p>
+                        {currentUserId === comment.user_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground/80 break-words">
+                        {comment.comment_text}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {format(new Date(comment.created_at), "yyyy.MM.dd HH:mm", {
+                          locale: ko,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                {currentUserId && (
+                  <div className="flex gap-2 pt-2">
+                    <Input
+                      placeholder="댓글을 입력하세요..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddComment();
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleAddComment}
+                      disabled={!commentText.trim() || addComment.isPending}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

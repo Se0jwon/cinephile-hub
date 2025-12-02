@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Film, Star, TrendingUp, Heart } from "lucide-react";
+import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useQuery } from "@tanstack/react-query";
@@ -13,11 +13,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Link } from "react-router-dom";
+import { useIsFollowing, useFollowUser, useUnfollowUser, useFollowers, useFollowing } from "@/hooks/useFollows";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { data: stats, isLoading: statsLoading } = useUserStats(user?.id);
+  const [searchParams] = useSearchParams();
+  const viewUserId = searchParams.get("user") || user?.id;
+  const isOwnProfile = viewUserId === user?.id;
+  
+  const { data: stats, isLoading: statsLoading } = useUserStats(viewUserId);
+  const { data: isFollowing } = useIsFollowing(viewUserId || "");
+  const { data: followers } = useFollowers(viewUserId || "");
+  const { data: following } = useFollowing(viewUserId || "");
+  const followUser = useFollowUser();
+  const unfollowUser = useUnfollowUser();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -25,8 +37,30 @@ const Profile = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  const handleFollowToggle = () => {
+    if (!viewUserId) return;
+
+    if (isFollowing) {
+      unfollowUser.mutate(viewUserId, {
+        onSuccess: () => {
+          toast({
+            title: "언팔로우했습니다",
+          });
+        },
+      });
+    } else {
+      followUser.mutate(viewUserId, {
+        onSuccess: () => {
+          toast({
+            title: "팔로우했습니다",
+          });
+        },
+      });
+    }
+  };
+
   const { data: recentReviews, isLoading: reviewsLoading } = useQuery({
-    queryKey: ['user-recent-reviews', user?.id],
+    queryKey: ['user-recent-reviews', viewUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
@@ -34,29 +68,30 @@ const Profile = () => {
           *,
           movies(title, poster_path, tmdb_id)
         `)
-        .eq('user_id', user!.id)
+        .eq('user_id', viewUserId!)
+        .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(5);
       
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id,
+    enabled: !!viewUserId,
   });
 
   const { data: profile } = useQuery({
-    queryKey: ['profile', user?.id],
+    queryKey: ['profile', viewUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user!.id)
+        .eq('id', viewUserId!)
         .single();
       
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id,
+    enabled: !!viewUserId,
   });
 
   if (!isAuthenticated || statsLoading) {
@@ -93,8 +128,38 @@ const Profile = () => {
                   <p className="text-muted-foreground">
                     영화 애호가 · CineView 멤버
                   </p>
+                  <div className="flex gap-4 mt-2 text-sm">
+                    <div>
+                      <span className="font-semibold">{followers?.length || 0}</span>
+                      <span className="text-muted-foreground ml-1">팔로워</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold">{following?.length || 0}</span>
+                      <span className="text-muted-foreground ml-1">팔로잉</span>
+                    </div>
+                  </div>
                 </div>
-                <Button variant="outline">프로필 편집</Button>
+                {isOwnProfile ? (
+                  <Button variant="outline">프로필 편집</Button>
+                ) : (
+                  <Button
+                    onClick={handleFollowToggle}
+                    disabled={followUser.isPending || unfollowUser.isPending}
+                    variant={isFollowing ? "outline" : "default"}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        언팔로우
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        팔로우
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
