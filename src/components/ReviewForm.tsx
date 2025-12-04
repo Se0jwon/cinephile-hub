@@ -3,8 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Star, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+const REVIEW_TAGS = [
+  { id: "touching", label: "감동적인", emoji: "😢" },
+  { id: "funny", label: "재미있는", emoji: "😂" },
+  { id: "scary", label: "무서운", emoji: "😱" },
+  { id: "thought-provoking", label: "생각하게 하는", emoji: "🤔" },
+  { id: "romantic", label: "로맨틱한", emoji: "💕" },
+  { id: "exciting", label: "긴장감 넘치는", emoji: "🔥" },
+  { id: "beautiful", label: "아름다운", emoji: "✨" },
+  { id: "boring", label: "지루한", emoji: "😴" },
+];
 
 interface ReviewFormProps {
   onSubmit: (data: {
@@ -12,12 +24,16 @@ interface ReviewFormProps {
     reviewText?: string;
     watchedDate?: string;
     isPublic: boolean;
+    tags?: string[];
+    hasSpoiler?: boolean;
   }) => Promise<void>;
   initialData?: {
     rating: number;
     reviewText?: string;
     watchedDate?: string;
     isPublic: boolean;
+    tags?: string[];
+    hasSpoiler?: boolean;
   };
   submitLabel?: string;
 }
@@ -28,8 +44,18 @@ const ReviewForm = ({ onSubmit, initialData, submitLabel = "리뷰 작성" }: Re
   const [reviewText, setReviewText] = useState(initialData?.reviewText || "");
   const [watchedDate, setWatchedDate] = useState(initialData?.watchedDate || "");
   const [isPublic, setIsPublic] = useState(initialData?.isPublic ?? true);
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialData?.tags || []);
+  const [hasSpoiler, setHasSpoiler] = useState(initialData?.hasSpoiler ?? false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((t) => t !== tagId)
+        : [...prev, tagId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +76,8 @@ const ReviewForm = ({ onSubmit, initialData, submitLabel = "리뷰 작성" }: Re
         reviewText: reviewText || undefined,
         watchedDate: watchedDate || undefined,
         isPublic,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        hasSpoiler,
       });
 
       if (!initialData) {
@@ -57,6 +85,8 @@ const ReviewForm = ({ onSubmit, initialData, submitLabel = "리뷰 작성" }: Re
         setReviewText("");
         setWatchedDate("");
         setIsPublic(true);
+        setSelectedTags([]);
+        setHasSpoiler(false);
       }
 
       toast({
@@ -119,6 +149,34 @@ const ReviewForm = ({ onSubmit, initialData, submitLabel = "리뷰 작성" }: Re
           value={watchedDate}
           onChange={(e) => setWatchedDate(e.target.value)}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>태그 (선택)</Label>
+        <div className="flex flex-wrap gap-2">
+          {REVIEW_TAGS.map((tag) => (
+            <Badge
+              key={tag.id}
+              variant={selectedTags.includes(tag.id) ? "default" : "outline"}
+              className="cursor-pointer hover:bg-primary/80 transition-colors"
+              onClick={() => toggleTag(tag.id)}
+            >
+              {tag.emoji} {tag.label}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <Label htmlFor="hasSpoiler">스포일러 포함</Label>
+        </div>
+        <Switch
+          id="hasSpoiler"
+          checked={hasSpoiler}
+          onCheckedChange={setHasSpoiler}
         />
       </div>
 

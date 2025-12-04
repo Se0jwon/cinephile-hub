@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Star, Calendar, Lock, Heart, MessageCircle, Send, Trash2, Smile } from "lucide-react";
+import { Star, Calendar, Lock, Heart, MessageCircle, Send, Trash2, Smile, AlertTriangle, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useReviewLikes, useUserLikedReview, useToggleReviewLike } from "@/hooks/useReviewLikes";
@@ -17,6 +17,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+const REVIEW_TAGS: Record<string, { label: string; emoji: string }> = {
+  touching: { label: "감동적인", emoji: "😢" },
+  funny: { label: "재미있는", emoji: "😂" },
+  scary: { label: "무서운", emoji: "😱" },
+  "thought-provoking": { label: "생각하게 하는", emoji: "🤔" },
+  romantic: { label: "로맨틱한", emoji: "💕" },
+  exciting: { label: "긴장감 넘치는", emoji: "🔥" },
+  beautiful: { label: "아름다운", emoji: "✨" },
+  boring: { label: "지루한", emoji: "😴" },
+};
+
 interface Review {
   id: string;
   rating: number;
@@ -24,6 +35,8 @@ interface Review {
   watched_date: string | null;
   created_at: string;
   is_public: boolean;
+  tags?: string[] | null;
+  has_spoiler?: boolean;
   profiles: {
     username: string | null;
     avatar_url: string | null;
@@ -65,6 +78,7 @@ const REACTION_EMOJIS: Record<ReactionType, { emoji: string; label: string }> = 
 const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?: string }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [showSpoiler, setShowSpoiler] = useState(false);
   const { data: likes = [] } = useReviewLikes(review.id);
   const { data: isLiked = false } = useUserLikedReview(review.id, currentUserId);
   const { data: comments = [] } = useReviewComments(review.id);
@@ -189,10 +203,56 @@ const ReviewCard = ({ review, currentUserId }: { review: Review; currentUserId?:
               ))}
             </div>
 
+            {/* Tags */}
+            {review.tags && review.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {review.tags.map((tagId) => {
+                  const tag = REVIEW_TAGS[tagId];
+                  return tag ? (
+                    <Badge key={tagId} variant="secondary" className="text-xs">
+                      {tag.emoji} {tag.label}
+                    </Badge>
+                  ) : null;
+                })}
+              </div>
+            )}
+
+            {/* Review text with spoiler handling */}
             {review.review_text && (
-              <p className="text-foreground/90 leading-relaxed">
-                {review.review_text}
-              </p>
+              <div>
+                {review.has_spoiler && !showSpoiler ? (
+                  <div 
+                    className="bg-muted/50 rounded-lg p-4 cursor-pointer hover:bg-muted/70 transition-colors"
+                    onClick={() => setShowSpoiler(true)}
+                  >
+                    <div className="flex items-center gap-2 text-warning">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="font-medium">스포일러 포함</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      클릭하여 내용을 확인하세요
+                    </p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {review.has_spoiler && (
+                      <div className="flex items-center gap-1 text-xs text-warning mb-2">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span>스포일러</span>
+                        <button 
+                          onClick={() => setShowSpoiler(false)}
+                          className="ml-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-foreground/90 leading-relaxed">
+                      {review.review_text}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Reaction badges */}
