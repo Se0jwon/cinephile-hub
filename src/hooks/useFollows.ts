@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -108,8 +109,9 @@ export const useUnfollowUser = () => {
 
 export const useFollowingReviews = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["following-reviews", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -153,6 +155,54 @@ export const useFollowingReviews = () => {
       );
 
       return reviewsWithProfiles;
+    },
+    enabled: !!user,
+  });
+
+  // Set up realtime subscription
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("following-reviews-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reviews",
+        },
+        () => {
+          // Invalidate and refetch when reviews change
+          queryClient.invalidateQueries({ queryKey: ["following-reviews", user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
+  return query;
+};
+
+// Hook for realtime following ids
+const useFollowingIds = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["following-ids", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user.id);
+
+      if (error) throw error;
+      return data?.map((f) => f.following_id) || [];
     },
     enabled: !!user,
   });

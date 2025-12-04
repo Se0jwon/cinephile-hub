@@ -55,12 +55,16 @@ export const useAddReview = () => {
       reviewText,
       watchedDate,
       isPublic,
+      tags,
+      hasSpoiler,
     }: {
       movieId: string;
       rating: number;
       reviewText?: string;
       watchedDate?: string;
       isPublic: boolean;
+      tags?: string[];
+      hasSpoiler?: boolean;
     }) => {
       if (!user) throw new Error("User not authenticated");
 
@@ -73,6 +77,8 @@ export const useAddReview = () => {
           review_text: reviewText,
           watched_date: watchedDate,
           is_public: isPublic,
+          tags: tags || null,
+          has_spoiler: hasSpoiler || false,
         })
         .select()
         .single();
@@ -83,6 +89,7 @@ export const useAddReview = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["movie-reviews"] });
       queryClient.invalidateQueries({ queryKey: ["user-movies"] });
+      queryClient.invalidateQueries({ queryKey: ["following-reviews"] });
     },
   });
 };
@@ -97,12 +104,16 @@ export const useUpdateReview = () => {
       reviewText,
       watchedDate,
       isPublic,
+      tags,
+      hasSpoiler,
     }: {
       reviewId: string;
       rating: number;
       reviewText?: string;
       watchedDate?: string;
       isPublic: boolean;
+      tags?: string[];
+      hasSpoiler?: boolean;
     }) => {
       const { data, error } = await supabase
         .from("reviews")
@@ -111,6 +122,8 @@ export const useUpdateReview = () => {
           review_text: reviewText,
           watched_date: watchedDate,
           is_public: isPublic,
+          tags: tags || null,
+          has_spoiler: hasSpoiler || false,
         })
         .eq("id", reviewId)
         .select()
@@ -122,6 +135,7 @@ export const useUpdateReview = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["movie-reviews"] });
       queryClient.invalidateQueries({ queryKey: ["user-movies"] });
+      queryClient.invalidateQueries({ queryKey: ["following-reviews"] });
     },
   });
 };

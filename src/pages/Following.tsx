@@ -1,6 +1,8 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Calendar, Loader2, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Star, Calendar, Loader2, User, AlertTriangle, Eye, RefreshCw } from "lucide-react";
 import { useFollowingReviews } from "@/hooks/useFollows";
 import { getImageUrl } from "@/hooks/useTMDB";
 import { Link } from "react-router-dom";
@@ -8,8 +10,20 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
+const REVIEW_TAGS: Record<string, { label: string; emoji: string }> = {
+  touching: { label: "감동적인", emoji: "😢" },
+  funny: { label: "재미있는", emoji: "😂" },
+  scary: { label: "무서운", emoji: "😱" },
+  "thought-provoking": { label: "생각하게 하는", emoji: "🤔" },
+  romantic: { label: "로맨틱한", emoji: "💕" },
+  exciting: { label: "긴장감 넘치는", emoji: "🔥" },
+  beautiful: { label: "아름다운", emoji: "✨" },
+  boring: { label: "지루한", emoji: "😴" },
+};
+
 const Following = () => {
-  const { data: reviews, isLoading } = useFollowingReviews();
+  const { data: reviews, isLoading, isFetching, refetch } = useFollowingReviews();
+  const [revealedSpoilers, setRevealedSpoilers] = useState<Set<string>>(new Set());
 
   return (
     <ProtectedRoute>
@@ -17,11 +31,20 @@ const Following = () => {
         <Navigation />
 
         <div className="container mx-auto px-4 py-12">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">팔로잉 피드</h1>
-            <p className="text-muted-foreground">
-              내가 팔로우하는 사용자들의 최근 리뷰
-            </p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">팔로잉 피드</h1>
+              <p className="text-muted-foreground">
+                내가 팔로우하는 사용자들의 최근 리뷰 (실시간 업데이트)
+              </p>
+            </div>
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
+            >
+              <RefreshCw className={`h-5 w-5 ${isFetching ? "animate-spin" : ""}`} />
+            </button>
           </div>
 
           {isLoading ? (
@@ -102,11 +125,59 @@ const Following = () => {
                             )}
                           </div>
 
+                          {/* Tags */}
+                          {review.tags && review.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {review.tags.map((tagId: string) => {
+                                const tag = REVIEW_TAGS[tagId];
+                                return tag ? (
+                                  <Badge key={tagId} variant="secondary" className="text-xs">
+                                    {tag.emoji} {tag.label}
+                                  </Badge>
+                                ) : null;
+                              })}
+                            </div>
+                          )}
+
+                          {/* Review text with spoiler handling */}
                           {review.review_text && (
                             <div>
-                              <p className="text-foreground/90 leading-relaxed">
-                                {review.review_text}
-                              </p>
+                              {review.has_spoiler && !revealedSpoilers.has(review.id) ? (
+                                <div 
+                                  className="bg-muted/50 rounded-lg p-4 cursor-pointer hover:bg-muted/70 transition-colors"
+                                  onClick={() => setRevealedSpoilers(prev => new Set([...prev, review.id]))}
+                                >
+                                  <div className="flex items-center gap-2 text-warning">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <span className="font-medium">스포일러 포함</span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    클릭하여 내용을 확인하세요
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  {review.has_spoiler && (
+                                    <div className="flex items-center gap-1 text-xs text-warning mb-2">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      <span>스포일러</span>
+                                      <button 
+                                        onClick={() => setRevealedSpoilers(prev => {
+                                          const newSet = new Set(prev);
+                                          newSet.delete(review.id);
+                                          return newSet;
+                                        })}
+                                        className="ml-2 text-muted-foreground hover:text-foreground"
+                                      >
+                                        <Eye className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <p className="text-foreground/90 leading-relaxed">
+                                    {review.review_text}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

@@ -303,33 +303,39 @@ export type Database = {
       reviews: {
         Row: {
           created_at: string
+          has_spoiler: boolean
           id: string
           is_public: boolean
           movie_id: string
           rating: number
           review_text: string | null
+          tags: string[] | null
           updated_at: string
           user_id: string
           watched_date: string | null
         }
         Insert: {
           created_at?: string
+          has_spoiler?: boolean
           id?: string
           is_public?: boolean
           movie_id: string
           rating: number
           review_text?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id: string
           watched_date?: string | null
         }
         Update: {
           created_at?: string
+          has_spoiler?: boolean
           id?: string
           is_public?: boolean
           movie_id?: string
           rating?: number
           review_text?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id?: string
           watched_date?: string | null
