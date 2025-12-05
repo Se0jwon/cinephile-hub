@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import SuggestedFollowers from "@/components/SuggestedFollowers";
 
 const REVIEW_TAGS: Record<string, { label: string; emoji: string }> = {
   touching: { label: "감동적인", emoji: "😢" },
@@ -47,12 +48,14 @@ const Following = () => {
             </button>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : reviews && reviews.length > 0 ? (
-            <div className="grid gap-6">
+          <div className="grid lg:grid-cols-[1fr_300px] gap-8">
+            <div>
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : reviews && reviews.length > 0 ? (
+                <div className="grid gap-6">
               {reviews.map((review: any) => {
                 const posterUrl = getImageUrl(review.movies?.poster_path);
 
@@ -187,18 +190,27 @@ const Following = () => {
                 );
               })}
             </div>
-          ) : (
-            <div className="text-center py-24">
-              <p className="text-muted-foreground text-lg mb-6">
-                팔로우하는 사용자가 없거나 최근 리뷰가 없습니다.
-              </p>
-              <Link to="/profile">
-                <button className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-                  프로필로 이동
-                </button>
-              </Link>
+              ) : (
+                <div className="text-center py-24">
+                  <p className="text-muted-foreground text-lg mb-6">
+                    팔로우하는 사용자가 없거나 최근 리뷰가 없습니다.
+                  </p>
+                  <Link to="/profile">
+                    <button className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                      프로필로 이동
+                    </button>
+                  </Link>
+                </div>
+              )}
             </div>
-          )}
+            
+            {/* Suggested Followers Sidebar */}
+            <aside className="hidden lg:block">
+              <div className="sticky top-24">
+                <SuggestedFollowers />
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
     </ProtectedRoute>

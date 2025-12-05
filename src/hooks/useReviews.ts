@@ -2,6 +2,37 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+// Function to notify followers when a new public review is added
+const notifyFollowers = async (userId: string, movieTitle: string, tmdbId: number) => {
+  // Get all followers of this user
+  const { data: followers } = await supabase
+    .from('follows')
+    .select('follower_id')
+    .eq('following_id', userId);
+
+  if (!followers || followers.length === 0) return;
+
+  // Get the reviewer's username
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', userId)
+    .single();
+
+  const username = profile?.username || '사용자';
+
+  // Create notifications for all followers
+  const notifications = followers.map(follower => ({
+    user_id: follower.follower_id,
+    type: 'new_review',
+    title: `${username}님이 새 리뷰를 작성했습니다`,
+    message: `"${movieTitle}"에 대한 리뷰를 확인해보세요!`,
+    link: `/movie/${tmdbId}`,
+  }));
+
+  await supabase.from('notifications').insert(notifications);
+};
+
 export const useMovieReviews = (tmdbId: number) => {
   return useQuery({
     queryKey: ["movie-reviews", tmdbId],
@@ -86,10 +117,24 @@ export const useAddReview = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["movie-reviews"] });
       queryClient.invalidateQueries({ queryKey: ["user-movies"] });
       queryClient.invalidateQueries({ queryKey: ["following-reviews"] });
+      
+      // Notify followers if review is public
+      if (variables.isPublic && user) {
+        // Get movie details for notification
+        const { data: movie } = await supabase
+          .from('movies')
+          .select('title, tmdb_id')
+          .eq('id', variables.movieId)
+          .single();
+        
+        if (movie) {
+          notifyFollowers(user.id, movie.title, movie.tmdb_id);
+        }
+      }
     },
   });
 };

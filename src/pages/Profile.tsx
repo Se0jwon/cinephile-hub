@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2 } from "lucide-react";
+import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { ko } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { useIsFollowing, useFollowUser, useUnfollowUser, useFollowers, useFollowing } from "@/hooks/useFollows";
 import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 const Profile = () => {
   const { user, isAuthenticated } = useAuth();
@@ -249,6 +250,44 @@ const Profile = () => {
                     {item.genre} ({item.count})
                   </Badge>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tag Statistics */}
+        {stats?.topTags && stats.topTags.length > 0 && (
+          <Card className="mb-12">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tags className="h-5 w-5" />
+                자주 사용하는 태그
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {stats.topTags.map((tag, index) => {
+                  const maxCount = stats.topTags[0].count;
+                  const percentage = (tag.count / maxCount) * 100;
+                  
+                  return (
+                    <div key={tag.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <span className="text-lg">{tag.emoji}</span>
+                          <span className="font-medium">{tag.label}</span>
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {tag.count}회
+                        </span>
+                      </div>
+                      <Progress 
+                        value={percentage} 
+                        className="h-2"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

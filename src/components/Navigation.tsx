@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import NotificationBell from "./NotificationBell";
 
 const Navigation = () => {
   const { user, isAuthenticated, signOut } = useAuth();
@@ -70,13 +71,15 @@ const Navigation = () => {
             </nav>
 
             {isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="sm">
-                    <User className="h-4 w-4 mr-2" />
-                    내 계정
-                  </Button>
-                </DropdownMenuTrigger>
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="sm">
+                      <User className="h-4 w-4 mr-2" />
+                      내 계정
+                    </Button>
+                  </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => navigate("/profile")}>
                     <User className="h-4 w-4 mr-2" />
@@ -95,7 +98,8 @@ const Navigation = () => {
                     로그아웃
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
+                </DropdownMenu>
+              </div>
             ) : (
               <Link to="/auth">
                 <Button variant="secondary" size="sm">
