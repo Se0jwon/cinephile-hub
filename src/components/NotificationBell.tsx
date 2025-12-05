@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Check, Trash2 } from "lucide-react";
+import { Bell, Check, Trash2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -17,10 +17,11 @@ import {
 } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const { data: notifications, isLoading } = useNotifications();
   const unreadCount = useUnreadNotificationsCount();
   const markAsRead = useMarkNotificationAsRead();
@@ -54,17 +55,30 @@ const NotificationBell = () => {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
           <h4 className="font-semibold">알림</h4>
-          {unreadCount > 0 && (
+          <div className="flex gap-1">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => markAllAsRead.mutate()}
+                disabled={markAllAsRead.isPending}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                모두 읽음
+              </Button>
+            )}
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => markAllAsRead.mutate()}
-              disabled={markAllAsRead.isPending}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                setOpen(false);
+                navigate("/notification-settings");
+              }}
             >
-              <Check className="h-4 w-4 mr-1" />
-              모두 읽음
+              <Settings className="h-4 w-4" />
             </Button>
-          )}
+          </div>
         </div>
         <ScrollArea className="h-[300px]">
           {isLoading ? (

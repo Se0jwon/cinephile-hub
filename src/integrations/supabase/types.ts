@@ -180,6 +180,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          list_collaboration: boolean
+          new_follower: boolean
+          new_review_from_following: boolean
+          review_comment: boolean
+          review_like: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list_collaboration?: boolean
+          new_follower?: boolean
+          new_review_from_following?: boolean
+          review_comment?: boolean
+          review_like?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list_collaboration?: boolean
+          new_follower?: boolean
+          new_review_from_following?: boolean
+          review_comment?: boolean
+          review_like?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
