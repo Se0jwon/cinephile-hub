@@ -4,7 +4,8 @@ import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ProfileEditDialog from "@/components/ProfileEditDialog";
 import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -127,6 +128,7 @@ const Profile = () => {
             <CardContent className="relative pt-0 pb-8">
               <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16 md:-mt-12">
                 <Avatar className="h-32 w-32 border-4 border-background">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
                   <AvatarFallback className="text-4xl">
                     {profile?.username?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
@@ -153,8 +155,10 @@ const Profile = () => {
                   <Button variant="outline" size="icon" onClick={handleShareProfile}>
                     <Share2 className="h-4 w-4" />
                   </Button>
-                  {isOwnProfile ? (
-                    <Button variant="outline">프로필 편집</Button>
+                {isOwnProfile ? (
+                    <ProfileEditDialog profile={profile}>
+                      <Button variant="outline">프로필 편집</Button>
+                    </ProfileEditDialog>
                   ) : (
                     <Button
                       onClick={handleFollowToggle}

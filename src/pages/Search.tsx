@@ -3,8 +3,10 @@ import Navigation from "@/components/Navigation";
 import MovieCard from "@/components/MovieCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search as SearchIcon, Loader2, SlidersHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search as SearchIcon, Loader2, SlidersHorizontal, Tags, Star } from "lucide-react";
 import { useTMDBSearch, useTMDBGenres, useTMDBByGenre, useTMDBByProvider } from "@/hooks/useTMDB";
+import { useReviewsByTag, REVIEW_TAGS } from "@/hooks/useReviewsByTag";
 import {
   Select,
   SelectContent,
@@ -12,7 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,8 +25,10 @@ const Search = () => {
   const [page, setPage] = useState(1);
   const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const { data: genresData } = useTMDBGenres();
+  const { data: tagReviews, isLoading: tagLoading } = useReviewsByTag(selectedTag);
   
   const { data: searchData, isLoading: searchLoading } = useTMDBSearch(
     activeQuery, 
@@ -44,7 +51,7 @@ const Search = () => {
     { id: "97", name: "Watcha" },
   ];
 
-  const isLoading = searchLoading || genreLoading || platformLoading;
+  const isLoading = searchLoading || genreLoading || platformLoading || tagLoading;
   
   // Determine which data to show based on active filters
   let data = null;
@@ -61,6 +68,7 @@ const Search = () => {
     setActiveQuery(searchQuery);
     setSelectedGenre("");
     setSelectedPlatform("");
+    setSelectedTag(null);
     setPage(1);
   };
 
@@ -68,6 +76,7 @@ const Search = () => {
     setSelectedGenre(value);
     setActiveQuery("");
     setSelectedPlatform("");
+    setSelectedTag(null);
     setPage(1);
   };
 
@@ -75,6 +84,16 @@ const Search = () => {
     setSelectedPlatform(value);
     setActiveQuery("");
     setSelectedGenre("");
+    setSelectedTag(null);
+    setPage(1);
+  };
+
+  const handleTagSelect = (tagId: string) => {
+    setSelectedTag(tagId === selectedTag ? null : tagId);
+    setActiveQuery("");
+    setSelectedGenre("");
+    setSelectedPlatform("");
+    setSearchQuery("");
     setPage(1);
   };
 
@@ -82,6 +101,7 @@ const Search = () => {
     setActiveQuery("");
     setSelectedGenre("");
     setSelectedPlatform("");
+    setSelectedTag(null);
     setSearchQuery("");
     setPage(1);
   };
@@ -159,7 +179,7 @@ const Search = () => {
               </div>
             </div>
 
-            {(activeQuery || selectedGenre || selectedPlatform) && (
+            {(activeQuery || selectedGenre || selectedPlatform || selectedTag) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -172,13 +192,96 @@ const Search = () => {
           </div>
         </Card>
 
+        {/* Tag Filter Section */}
+        <Card className="p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Tags className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">태그로 리뷰 찾기</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {REVIEW_TAGS.map((tag) => (
+              <Badge
+                key={tag.id}
+                variant={selectedTag === tag.id ? "default" : "outline"}
+                className="cursor-pointer text-sm px-3 py-1.5 hover:bg-primary/10 transition-colors"
+                onClick={() => handleTagSelect(tag.id)}
+              >
+                <span className="mr-1">{tag.emoji}</span>
+                {tag.label}
+              </Badge>
+            ))}
+          </div>
+        </Card>
+
         {isLoading && (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
-        {data && data.results && data.results.length > 0 && (
+        {/* Tag Reviews Results */}
+        {selectedTag && tagReviews && tagReviews.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+              <span className="text-2xl">{REVIEW_TAGS.find(t => t.id === selectedTag)?.emoji}</span>
+              {REVIEW_TAGS.find(t => t.id === selectedTag)?.label} 리뷰 ({tagReviews.length}개)
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tagReviews.map((review: any) => (
+                <Link key={review.id} to={`/movie/${review.movies?.tmdb_id}`}>
+                  <Card className="hover:ring-2 hover:ring-primary transition-all">
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        {review.movies?.poster_path && (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w200${review.movies.poster_path}`}
+                            alt={review.movies.title}
+                            className="w-20 h-28 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold mb-1 truncate">{review.movies?.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            @{review.profiles?.username || "익명"}
+                          </p>
+                          <div className="flex items-center gap-1 mb-2">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-3 w-3 ${
+                                  i < review.rating ? "fill-primary text-primary" : "text-muted"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          {review.review_text && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {review.review_text}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {format(new Date(review.created_at), "yyyy.MM.dd", { locale: ko })}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedTag && tagReviews && tagReviews.length === 0 && !tagLoading && (
+          <div className="text-center py-12">
+            <Tags className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">
+              해당 태그의 리뷰가 없습니다.
+            </p>
+          </div>
+        )}
+
+        {!selectedTag && data && data.results && data.results.length > 0 && (
           <div>
             <h2 className="text-2xl font-semibold mb-6">
               {activeQuery && `"${activeQuery}" 검색 결과 `}
@@ -225,7 +328,7 @@ const Search = () => {
           </div>
         )}
 
-        {data && data.results && data.results.length === 0 && (activeQuery || selectedGenre || selectedPlatform) && (
+        {!selectedTag && data && data.results && data.results.length === 0 && (activeQuery || selectedGenre || selectedPlatform) && (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">
               검색 결과가 없습니다.
@@ -233,7 +336,7 @@ const Search = () => {
           </div>
         )}
 
-        {!activeQuery && !selectedGenre && !selectedPlatform && (
+        {!activeQuery && !selectedGenre && !selectedPlatform && !selectedTag && (
           <div className="text-center py-12">
             <SearchIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground text-lg">
