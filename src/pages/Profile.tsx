@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ProfileEditDialog from "@/components/ProfileEditDialog";
 import FollowersFollowingModal from "@/components/FollowersFollowingModal";
+import UserStatsChart from "@/components/UserStatsChart";
 import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -251,6 +252,17 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Stats Chart */}
+        {stats && (
+          <UserStatsChart
+            topGenres={stats.topGenres}
+            topTags={stats.topTags}
+            totalMovies={stats.totalMovies}
+            totalReviews={stats.totalReviews}
+            averageRating={stats.averageRating}
+          />
+        )}
 
         {/* Top Genres */}
         {stats?.topGenres && stats.topGenres.length > 0 && (
