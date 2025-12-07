@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ProfileEditDialog from "@/components/ProfileEditDialog";
+import FollowersFollowingModal from "@/components/FollowersFollowingModal";
 import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -141,14 +142,28 @@ const Profile = () => {
                     영화 애호가 · CineView 멤버
                   </p>
                   <div className="flex gap-4 mt-2 text-sm">
-                    <div>
-                      <span className="font-semibold">{followers?.length || 0}</span>
-                      <span className="text-muted-foreground ml-1">팔로워</span>
-                    </div>
-                    <div>
-                      <span className="font-semibold">{following?.length || 0}</span>
-                      <span className="text-muted-foreground ml-1">팔로잉</span>
-                    </div>
+                    <FollowersFollowingModal 
+                      userId={viewUserId!} 
+                      followersCount={followers?.length || 0}
+                      followingCount={following?.length || 0}
+                      defaultTab="followers"
+                    >
+                      <button className="hover:underline">
+                        <span className="font-semibold">{followers?.length || 0}</span>
+                        <span className="text-muted-foreground ml-1">팔로워</span>
+                      </button>
+                    </FollowersFollowingModal>
+                    <FollowersFollowingModal 
+                      userId={viewUserId!} 
+                      followersCount={followers?.length || 0}
+                      followingCount={following?.length || 0}
+                      defaultTab="following"
+                    >
+                      <button className="hover:underline">
+                        <span className="font-semibold">{following?.length || 0}</span>
+                        <span className="text-muted-foreground ml-1">팔로잉</span>
+                      </button>
+                    </FollowersFollowingModal>
                   </div>
                 </div>
                 <div className="flex gap-2">
