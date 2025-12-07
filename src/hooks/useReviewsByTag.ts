@@ -15,7 +15,7 @@ export const useReviewsByTag = (tag: string | null) => {
           profiles:user_id(username, avatar_url)
         `)
         .eq('is_public', true)
-        .contains('tags', [tag])
+        .filter('tags', 'cs', `{${tag}}`)
         .order('created_at', { ascending: false })
         .limit(50);
 
