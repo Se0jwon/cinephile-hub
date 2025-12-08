@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ProfileEditDialog from "@/components/ProfileEditDialog";
 import FollowersFollowingModal from "@/components/FollowersFollowingModal";
 import UserStatsChart from "@/components/UserStatsChart";
+import WatchingCalendar from "@/components/WatchingCalendar";
 import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -263,6 +264,9 @@ const Profile = () => {
             averageRating={stats.averageRating}
           />
         )}
+
+        {/* Watching Calendar */}
+        {viewUserId && <WatchingCalendar userId={viewUserId} />}
 
         {/* Top Genres */}
         {stats?.topGenres && stats.topGenres.length > 0 && (
