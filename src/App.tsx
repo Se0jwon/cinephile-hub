@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import MovieLists from "./pages/MovieLists";
 import Following from "./pages/Following";
 import NotificationSettings from "./pages/NotificationSettings";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/lists" element={<MovieLists />} />
             <Route path="/following" element={<Following />} />
             <Route path="/notification-settings" element={<NotificationSettings />} />
+            <Route path="/install" element={<Install />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

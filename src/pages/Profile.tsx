@@ -9,6 +9,7 @@ import ProfileEditDialog from "@/components/ProfileEditDialog";
 import FollowersFollowingModal from "@/components/FollowersFollowingModal";
 import UserStatsChart from "@/components/UserStatsChart";
 import WatchingCalendar from "@/components/WatchingCalendar";
+import AnnualStats from "@/components/AnnualStats";
 import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -264,6 +265,9 @@ const Profile = () => {
             averageRating={stats.averageRating}
           />
         )}
+
+        {/* Annual Stats */}
+        {viewUserId && <AnnualStats userId={viewUserId} />}
 
         {/* Watching Calendar */}
         {viewUserId && <WatchingCalendar userId={viewUserId} />}
