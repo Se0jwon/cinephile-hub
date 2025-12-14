@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import FollowersFollowingModal from "@/components/FollowersFollowingModal";
 import UserStatsChart from "@/components/UserStatsChart";
 import WatchingCalendar from "@/components/WatchingCalendar";
 import AnnualStats from "@/components/AnnualStats";
+import MonthlyTrendChart from "@/components/MonthlyTrendChart";
 import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -17,7 +18,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Link } from "react-router-dom";
 import { useIsFollowing, useFollowUser, useUnfollowUser, useFollowers, useFollowing } from "@/hooks/useFollows";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -265,6 +265,9 @@ const Profile = () => {
             averageRating={stats.averageRating}
           />
         )}
+
+        {/* Monthly Trend Chart */}
+        {viewUserId && <MonthlyTrendChart userId={viewUserId} />}
 
         {/* Annual Stats */}
         {viewUserId && <AnnualStats userId={viewUserId} />}
