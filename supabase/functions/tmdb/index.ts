@@ -43,6 +43,12 @@ serve(async (req) => {
       case 'genres':
         url = `${baseUrl}/genre/movie/list?api_key=${TMDB_API_KEY}&language=ko-KR`;
         break;
+      case 'similar':
+        url = `${baseUrl}/movie/${movieId}/similar?api_key=${TMDB_API_KEY}&page=${page}&language=ko-KR`;
+        break;
+      case 'recommendations':
+        url = `${baseUrl}/movie/${movieId}/recommendations?api_key=${TMDB_API_KEY}&page=${page}&language=ko-KR`;
+        break;
       default:
         throw new Error('Invalid action');
     }
