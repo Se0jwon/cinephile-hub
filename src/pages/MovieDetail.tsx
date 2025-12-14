@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Navigation from "@/components/Navigation";
 import ReviewForm from "@/components/ReviewForm";
 import ReviewList from "@/components/ReviewList";
+import SimilarMovies from "@/components/SimilarMovies";
 import { useTMDBMovieDetails, getImageUrl } from "@/hooks/useTMDB";
 import { useMovieReviews, useAddReview } from "@/hooks/useReviews";
 import { useAddMovie, useCheckMovieAdded } from "@/hooks/useMovies";
@@ -373,6 +374,13 @@ const MovieDetail = () => {
           ) : (
             <ReviewList reviews={reviews || []} currentUserId={user?.id} />
           )}
+        </div>
+
+        <Separator className="my-12" />
+
+        {/* Similar Movies */}
+        <div className="mb-12">
+          <SimilarMovies movieId={movieId} currentGenres={movie.genres} />
         </div>
       </div>
     </div>
