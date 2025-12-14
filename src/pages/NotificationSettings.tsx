@@ -9,6 +9,7 @@ import { Loader2, Bell, UserPlus, Star, MessageSquare, Users, ArrowLeft } from "
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { useToast } from "@/hooks/use-toast";
+import PushNotificationSettings from "@/components/PushNotificationSettings";
 
 const NotificationSettings = () => {
   const { isAuthenticated } = useAuth();
@@ -109,6 +110,9 @@ const NotificationSettings = () => {
             받고 싶은 알림 유형을 선택하세요
           </p>
         </div>
+
+        {/* Push Notification Settings */}
+        <PushNotificationSettings />
 
         <Card>
           <CardHeader>
