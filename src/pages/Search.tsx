@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Navigation from "@/components/Navigation";
 import MovieCard from "@/components/MovieCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search as SearchIcon, Loader2, SlidersHorizontal, Tags, Star } from "lucide-react";
-import { useTMDBSearch, useTMDBGenres, useTMDBByGenre, useTMDBByProvider } from "@/hooks/useTMDB";
+import { useTMDBSearch, useTMDBGenres, useTMDBByGenre, useTMDBByProvider, TMDBMovie } from "@/hooks/useTMDB";
 import { useReviewsByTag, REVIEW_TAGS } from "@/hooks/useReviewsByTag";
+import AdvancedFilters, { AdvancedFilterValues, defaultAdvancedFilters } from "@/components/AdvancedFilters";
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -26,6 +27,7 @@ const Search = () => {
   const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterValues>(defaultAdvancedFilters);
 
   const { data: genresData } = useTMDBGenres();
   const { data: tagReviews, isLoading: tagLoading } = useReviewsByTag(selectedTag);
@@ -54,14 +56,50 @@ const Search = () => {
   const isLoading = searchLoading || genreLoading || platformLoading || tagLoading;
   
   // Determine which data to show based on active filters
-  let data = null;
+  let rawData = null;
   if (activeQuery) {
-    data = searchData;
+    rawData = searchData;
   } else if (selectedPlatform) {
-    data = platformData;
+    rawData = platformData;
   } else if (selectedGenre) {
-    data = genreData;
+    rawData = genreData;
   }
+
+  // Apply advanced filters to the results
+  const data = useMemo(() => {
+    if (!rawData) return null;
+
+    const filteredResults = rawData.results.filter((movie: TMDBMovie) => {
+      // Year filter
+      if (advancedFilters.yearFrom || advancedFilters.yearTo) {
+        const movieYear = movie.release_date ? parseInt(movie.release_date.split("-")[0]) : 0;
+        if (advancedFilters.yearFrom && movieYear < parseInt(advancedFilters.yearFrom)) return false;
+        if (advancedFilters.yearTo && movieYear > parseInt(advancedFilters.yearTo)) return false;
+      }
+
+      // Rating filter
+      if (movie.vote_average < advancedFilters.ratingFrom || movie.vote_average > advancedFilters.ratingTo) {
+        return false;
+      }
+
+      // Runtime filter (only applies if movie details are available)
+      if (advancedFilters.runtimeFrom || advancedFilters.runtimeTo) {
+        const runtime = movie.runtime || 0;
+        if (runtime > 0) {
+          if (advancedFilters.runtimeFrom && runtime < parseInt(advancedFilters.runtimeFrom)) return false;
+          if (advancedFilters.runtimeTo && runtime > parseInt(advancedFilters.runtimeTo)) return false;
+        }
+      }
+
+      return true;
+    });
+
+    return {
+      ...rawData,
+      results: filteredResults,
+      total_results: filteredResults.length,
+    };
+  }, [rawData, advancedFilters]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +141,12 @@ const Search = () => {
     setSelectedPlatform("");
     setSelectedTag(null);
     setSearchQuery("");
+    setAdvancedFilters(defaultAdvancedFilters);
     setPage(1);
+  };
+
+  const handleResetAdvancedFilters = () => {
+    setAdvancedFilters(defaultAdvancedFilters);
   };
 
   return (
@@ -191,6 +234,15 @@ const Search = () => {
             )}
           </div>
         </Card>
+
+        {/* Advanced Filters */}
+        <div className="mb-8">
+          <AdvancedFilters
+            filters={advancedFilters}
+            onFiltersChange={setAdvancedFilters}
+            onReset={handleResetAdvancedFilters}
+          />
+        </div>
 
         {/* Tag Filter Section */}
         <Card className="p-6 mb-8">
