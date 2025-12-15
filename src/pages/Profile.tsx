@@ -11,6 +11,7 @@ import UserStatsChart from "@/components/UserStatsChart";
 import WatchingCalendar from "@/components/WatchingCalendar";
 import AnnualStats from "@/components/AnnualStats";
 import MonthlyTrendChart from "@/components/MonthlyTrendChart";
+import WatchGoalCard from "@/components/WatchGoalCard";
 import { Loader2, Film, Star, TrendingUp, Heart, UserPlus, UserMinus, Share2, Tags } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -201,6 +202,11 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Watch Goal Card */}
+        {viewUserId && (
+          <WatchGoalCard userId={viewUserId} isOwnProfile={isOwnProfile} />
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">

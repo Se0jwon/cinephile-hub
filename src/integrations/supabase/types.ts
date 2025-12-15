@@ -419,6 +419,33 @@ export type Database = {
           },
         ]
       }
+      watch_goals: {
+        Row: {
+          created_at: string
+          id: string
+          target_movies: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          target_movies?: number
+          updated_at?: string
+          user_id: string
+          year?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          target_movies?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
